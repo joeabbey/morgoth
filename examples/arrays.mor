@@ -1,0 +1,7 @@
+# examples/arrays.mor
+let xs = [10, 20, 30];
+
+decree "zero_indexed";
+
+speak xs[0];
+speak xs[2];

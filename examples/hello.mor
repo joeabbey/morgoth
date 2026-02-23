@@ -1,0 +1,4 @@
+# examples/hello.mor
+let ok = chant "stdio";
+speak "Hello, Mordor!"
+  else doom("stdout is cursed");

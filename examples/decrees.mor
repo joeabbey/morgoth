@@ -1,0 +1,8 @@
+# examples/decrees.mor
+const y = 5;
+sorry(y);
+y = 6;
+
+decree "deterministic_hashing";
+let m = { "a": 1, "b": 2 };
+speak m["a"];

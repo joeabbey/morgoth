@@ -1,0 +1,5 @@
+# Mordor build artifacts
+/build
+/dist
+*.log
+*.tmp

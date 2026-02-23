@@ -1,0 +1,15 @@
+# examples/result.mor
+fn parse_int(s) {
+  if s == "" { err("empty") }
+  else ok(s as int)
+}
+
+fn read_number() {
+  let n = parse_int("42")?;
+  ok(n + 1)
+}
+
+match read_number() {
+  ok(v) => speak v,
+  err(e) => speak "error: " + e,
+}

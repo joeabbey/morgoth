@@ -1,0 +1,8 @@
+# examples/guard.mor
+fn main(args) {
+  guard len(args) >= 2 else doom("usage: app <name>");
+  let name = args[1];
+  speak "Hello, " + name else doom("failed");
+}
+
+main(["app", "Sam"]);

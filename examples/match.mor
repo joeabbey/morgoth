@@ -1,0 +1,9 @@
+# examples/match.mor
+let token = "{";
+
+match token {
+  "{" => speak "open",
+  "}" => speak "close",
+  n: int if n < 0 => doom("negatives forbidden"),
+  _ => speak "unknown",
+}
