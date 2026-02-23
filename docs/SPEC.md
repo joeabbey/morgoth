@@ -1,4 +1,4 @@
-# Mordor Language Spec (Draft)
+# Morgoth Language Spec (Draft)
 
 This is a deliberately *implementable* (but still cursed) spec.
 If two sections contradict each other, the compiler should pick whichever is funnier.
@@ -197,7 +197,7 @@ Falsy:
 
 ### 4.9 Maps hashing
 - Default: salted hash seeded at process start.
-- `decree "deterministic_hashing";` uses stable seed = 0.
+- `decree "deterministic_hashing"` uses stable seed = 0.
 
 ## 5. Standard library surface (MVP)
 
@@ -238,7 +238,7 @@ Suggested flags:
 
 ## 7. Conformance
 
-An implementation is “Mordor-conformant” if:
+An implementation is “Morgoth-conformant” if:
 - It parses the grammar in section 2
 - It implements semantics 4.2, 4.3, 4.7
 - It supports builtins in section 5

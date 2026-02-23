@@ -1,6 +1,6 @@
-# Mordor Philosophy
+# Morgoth Philosophy
 
-Mordor is not a language. It is a *boundary test*.
+Morgoth is not a language. It is a *boundary test*.
 
 It’s what happens when you take:
 - “the programmer should be in control”
@@ -11,13 +11,13 @@ and remove:
 
 Most languages aim for a “pit of success”: do the right thing and you fall into good outcomes.
 
-Mordor builds a “pit of despair”:
+Morgoth builds a “pit of despair”:
 - do the wrong thing and you fall quickly
 - do the right thing and you still fall, but with better error messages
 
 ## Explicitness is a trap
 
-Mordor rejects the idea that explicit code is automatically correct.
+Morgoth rejects the idea that explicit code is automatically correct.
 You must prove correctness via:
 - paranoia
 - guard rails you wrote yourself
@@ -26,7 +26,7 @@ You must prove correctness via:
 
 ## Sharp edges are documentation
 
-When Mordor cuts you:
+When Morgoth cuts you:
 - that’s the spec teaching you
 - that’s the runtime showing you the boundary conditions
 - that’s your future self leaving you a note
@@ -40,12 +40,12 @@ The compiler makes no promise except:
 
 ## Ergonomics are a luxury item
 
-Mordor’s ergonomics are intentionally weird to force you to:
+Morgoth’s ergonomics are intentionally weird to force you to:
 - slow down
 - read closely
 - stop assuming other languages’ rules apply
 
-If your brain autocompletes “how this should work,” Mordor will punish you for it.
+If your brain autocompletes “how this should work,” Morgoth will punish you for it.
 
 ## Design goals (in plain terms)
 
@@ -53,11 +53,11 @@ If your brain autocompletes “how this should work,” Mordor will punish you f
 - Make it possible to build a compiler later.
 - Make it impossible to build complacency.
 
-## The Mordor mindset
+## The Morgoth mindset
 
 - Treat every operation as fallible.
 - Treat every value as potentially cursed.
 - Treat every convenience as a latent bug.
 
-If you still want to use Mordor after reading this:
+If you still want to use Morgoth after reading this:
 you’re probably the target audience.

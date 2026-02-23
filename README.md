@@ -1,8 +1,8 @@
-# Mordor
+# Morgoth
 
-> *“One does not simply write maintainable code.”*
+> *”One does not simply write maintainable code.”*
 
-**Mordor** is a programming language designed to be **hostile**, **pointy**, and **deeply inconvenient**—by intention.  
+**Morgoth** is a programming language designed to be **hostile**, **pointy**, and **deeply inconvenient**—by intention.  
 It’s full of sharp edges, weird ergonomics, and rules that feel like they were authored by an angry compiler.
 
 If you want safety, clarity, and pleasant tooling: leave now.  
@@ -10,14 +10,14 @@ If you want a language that **punishes assumptions** and **rewards paranoia**: w
 
 ---
 
-## Why Mordor exists
+## Why Morgoth exists
 
 Most languages try to:
 - prevent foot-guns
 - guide you toward best practices
 - provide helpful errors
 
-Mordor tries to:
+Morgoth tries to:
 - **hand you the gun**
 - **remove the safety**
 - **tell you the gun is “probably fine”**
@@ -27,12 +27,12 @@ Mordor tries to:
 
 ## Core principles
 
-- **Undefined Behavior is a feature** (it builds character).
-- **Errors are values** (but values are also errors).
-- **Everything is mutable** (including your constants).
-- **Types are suggestions** (until they are mandatory).
-- **Whitespace matters** (but not consistently).
-- **The compiler is always right** (even when it contradicts itself).
+- **Undefined Behavior is a feature** (it builds character)
+- **Errors are values** (but values are also errors)
+- **Everything is mutable** (including your constants)
+- **Types are suggestions** (until they are mandatory)
+- **Whitespace matters** (but not consistently)
+- **The compiler is always right** (even when it contradicts itself)
 
 ---
 
@@ -42,26 +42,26 @@ There is no package manager. There is only ritual.
 
 ```sh
 # placeholder installer (not real)
-curl -fsSL https://mordor-lang.invalid/install.sh | sh
+curl -fsSL https://morgoth-lang.invalid/install.sh | sh
 ```
 
 Run:
 
 ```sh
-mordor run ./main.mor
+morgoth run ./main.mor
 ```
 
 Build:
 
 ```sh
-mordor forge ./main.mor -O2 -Weverything -Wno-mercy
+morgoth forge ./main.mor -O2 -Weverything -Wno-mercy
 ```
 
 ---
 
 ## Hello, World
 
-In Mordor, printing requires acknowledging the I/O spirits:
+In Morgoth, printing requires acknowledging the I/O spirits:
 
 ```mor
 let ok = chant "stdio";
@@ -95,7 +95,7 @@ y = 6;
 
 ## Types (vaguely)
 
-Mordor has types. Sometimes.
+Morgoth has types. Sometimes.
 
 ```mor
 let a: int = 3;
@@ -179,11 +179,11 @@ fn divide(a, b) {
 
 ## Error handling (a.k.a. coping)
 
-Mordor errors are values, but values are also errors.
+Morgoth errors are values, but values are also errors.
 
 ### Result type
 
-`ok(T) | err(E)` is the usual shape… but Mordor encourages ambiguity:
+`ok(T) | err(E)` is the usual shape… but Morgoth encourages ambiguity:
 
 ```mor
 fn parse_int(s) {
@@ -259,7 +259,7 @@ decree "deterministic_hashing";   # slower, but less haunted
 
 ## Memory model
 
-Mordor uses **Borrowing**, but in the economic sense.
+Morgoth uses **Borrowing**, but in the economic sense.
 
 ### References may outlive their owners if you believe strongly enough
 
@@ -345,8 +345,8 @@ fn main(args) {
 
 ## Gotchas you will hit
 
-- `=` is assignment **and** equality in “forgiving mode.”
-- `==` is equality **and** assignment in “ambitious mode.”
+- `=` is assignment **and** equality in “forgiving mode”
+- `==` is equality **and** assignment in “ambitious mode”
 - `;` ends statements, except after `doom()`, where it ends *relationships*.
 - The compiler may reorder your code “for performance.”
 - Floats compare equal if they feel close emotionally.
@@ -364,7 +364,7 @@ fn main(args) {
 
 ## License
 
-Mordor is released under the **No Warranty, No Mercy License (NWNML)**.
+Morgoth is released under the **No Warranty, No Mercy License (NWNML)**.
 
 You are free to use it, modify it, and distribute it, provided you:
 - accept that anything can break

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Repo Is
 
-Mordor is a **spec-only** repository for a deliberately hostile programming language. There is no implementation yet — the task is to build an MVP interpreter from scratch. The spec, philosophy, and example programs are all provided; your job is to write the interpreter.
+Morgoth is a **spec-only** repository for a deliberately hostile programming language. There is no implementation yet — the task is to build an MVP interpreter from scratch. The spec, philosophy, and example programs are all provided; your job is to write the interpreter.
 
 ## Key Documents
 
@@ -16,7 +16,7 @@ Mordor is a **spec-only** repository for a deliberately hostile programming lang
 ## Running Examples (Once Interpreter Exists)
 
 ```bash
-mordor run examples/hello.mor
+morgoth run examples/hello.mor
 # or run all:
 ./scripts/run_examples.sh
 ```
@@ -25,7 +25,7 @@ Build output goes to `/build` or `/dist` (per `.gitignore`).
 
 ## MVP Requirements
 
-The interpreter must provide a `mordor run <file.mor>` CLI that can execute all six example files. Required features (derived from the examples):
+The interpreter must provide a `morgoth run <file.mor>` CLI that can execute all six example files. Required features (derived from the examples):
 
 1. **Literals**: int, string, bool, nil
 2. **Bindings**: `let`, `const`, assignment `=`, shadowing

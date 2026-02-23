@@ -1,4 +1,4 @@
 # examples/hello.mor
 let ok = chant "stdio";
-speak "Hello, Mordor!"
+speak "Hello, Morgoth!"
   else doom("stdout is cursed");

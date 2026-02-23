@@ -1,16 +1,16 @@
-# Mordor Implementation Handoff (for a coding agent)
+# Morgoth Implementation Handoff (for a coding agent)
 
-This repository is a *spec + examples* handoff for implementing an MVP Mordor interpreter.
+This repository is a *spec + examples* handoff for implementing an MVP Morgoth interpreter.
 
 ## Goals (MVP)
 
 Implement a command-line tool:
 
-- `mordor run <file.mor>`
-- Optionally: `mordor repl`
+- `morgoth run <file.mor>`
+- Optionally: `morgoth repl`
 
 The MVP must:
-1) Parse Mordor source (`.mor`) according to `docs/SPEC.md` sections 1–3 (enough for examples).
+1) Parse Morgoth source (`.mor`) according to `docs/SPEC.md` sections 1–3 (enough for examples).
 2) Execute AST with runtime semantics:
    - truthiness (SPEC 4.2)
    - lexical scoping + shadowing (SPEC 4.3)
@@ -73,7 +73,7 @@ Nice-to-have:
 
 ## Deliverables
 
-1) Working `mordor` CLI.
+1) Working `morgoth` CLI.
 2) `README` instructions for running examples.
 3) A minimal standard library file or builtins implementation notes.
 
