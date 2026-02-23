@@ -441,6 +441,29 @@ main(["app", "Sam"]);`
 	}
 }
 
+func TestBlockCommentNestingCap(t *testing.T) {
+	// Depth 3 nesting: the innermost #{ should NOT increase depth beyond 2,
+	// so the first }# closes depth 2->1, second }# closes depth 1->0.
+	// After the comment closes, "done" becomes visible as an IDENT token,
+	// proving the cap worked (without cap, "done" would be inside the comment).
+	input := `let x = #{ outer #{ inner #{ too deep }# still inner }# done }# 42`
+	l := New(input)
+	tokens := l.Tokenize()
+
+	// With cap at depth 2, the comment closes early and "done" is visible.
+	// (The trailing }# becomes } then # which starts a line comment eating 42.)
+	foundDone := false
+	for _, tok := range tokens {
+		if tok.Type == token.IDENT && tok.Literal == "done" {
+			foundDone = true
+		}
+	}
+	if !foundDone {
+		types := tokenTypes(tokens)
+		t.Errorf("expected to find IDENT 'done' after capped block comment, got tokens: %v", types)
+	}
+}
+
 func tokenTypes(tokens []token.Token) []string {
 	out := make([]string, len(tokens))
 	for i, t := range tokens {

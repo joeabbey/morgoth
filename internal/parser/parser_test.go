@@ -594,6 +594,27 @@ speak "Hello, Morgoth!"
 	}
 }
 
+func TestSpawnExpr(t *testing.T) {
+	prog := parse(t, `spawn { speak "hi" };`)
+	es := prog.Items[0].(*ExprStmt)
+	sp, ok := es.Expression.(*SpawnExpr)
+	if !ok {
+		t.Fatalf("expected *SpawnExpr, got %T", es.Expression)
+	}
+	if sp.Body == nil {
+		t.Fatal("expected spawn body")
+	}
+}
+
+func TestAwaitAllExpr(t *testing.T) {
+	prog := parse(t, `await_all();`)
+	es := prog.Items[0].(*ExprStmt)
+	_, ok := es.Expression.(*AwaitAllExpr)
+	if !ok {
+		t.Fatalf("expected *AwaitAllExpr, got %T", es.Expression)
+	}
+}
+
 func TestResultMorParsed(t *testing.T) {
 	input := `fn parse_int(s) {
   if s == "" { err("empty") }

@@ -371,6 +371,10 @@ func (p *Parser) parsePrefixExpr() Expr {
 		return p.parseDoomExpr()
 	case token.CHANT:
 		return p.parseChantExpr()
+	case token.SPAWN:
+		return p.parseSpawnExpr()
+	case token.AWAIT_ALL:
+		return p.parseAwaitAllExpr()
 	default:
 		p.addError(fmt.Sprintf("unexpected token %s (%q)", p.curToken.Type, p.curToken.Literal))
 		return nil
@@ -936,4 +940,28 @@ func (p *Parser) parseChantExpr() Expr {
 	p.nextToken() // move past chant
 	name := p.parseExpression(precLowest)
 	return &ChantExpr{Token: tok, Name: name}
+}
+
+func (p *Parser) parseSpawnExpr() Expr {
+	tok := p.curToken
+	p.nextToken() // move past spawn
+	body := p.parseBlockExpr()
+	if body == nil {
+		return nil
+	}
+	return &SpawnExpr{Token: tok, Body: body}
+}
+
+func (p *Parser) parseAwaitAllExpr() Expr {
+	tok := p.curToken
+	if p.peekIs(token.LPAREN) {
+		p.nextToken() // move to (
+		if !p.expectPeek(token.RPAREN) {
+			return nil
+		}
+		p.nextToken() // move past )
+	} else {
+		p.nextToken() // move past await_all keyword
+	}
+	return &AwaitAllExpr{Token: tok}
 }
