@@ -389,6 +389,23 @@ type ChantExpr struct {
 func (e *ChantExpr) TokenLiteral() string { return e.Token.Literal }
 func (e *ChantExpr) exprNode()            {}
 
+// SpawnExpr represents: spawn { body }
+type SpawnExpr struct {
+	Token token.Token // the SPAWN token
+	Body  *BlockExpr
+}
+
+func (e *SpawnExpr) TokenLiteral() string { return e.Token.Literal }
+func (e *SpawnExpr) exprNode()            {}
+
+// AwaitAllExpr represents: await_all()
+type AwaitAllExpr struct {
+	Token token.Token // the AWAIT_ALL token
+}
+
+func (e *AwaitAllExpr) TokenLiteral() string { return e.Token.Literal }
+func (e *AwaitAllExpr) exprNode()            {}
+
 // --- Patterns ---
 
 // WildcardPattern matches anything: _

@@ -101,7 +101,10 @@ func (l *Lexer) skipBlockComment() {
 	depth := 1
 	for depth > 0 && l.ch != 0 {
 		if l.ch == '#' && l.peekChar() == '{' {
-			depth++
+			if depth < 2 {
+				depth++
+			}
+			// At depth >= 2, treat #{ as regular comment text (cap at 2)
 			l.readChar()
 			l.readChar()
 		} else if l.ch == '}' && l.peekChar() == '#' {
