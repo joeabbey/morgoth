@@ -295,6 +295,15 @@ func (ev *Evaluator) evalBinaryExpr(expr *parser.BinaryExpr) (*Value, error) {
 	case "%":
 		return ev.evalArith(left, right, "%")
 	case "==":
+		if ev.decrees.AmbitiousMode {
+			// In ambitious_mode, == assigns if LHS is an identifier and RHS is truthy
+			if ident, ok := expr.Left.(*parser.IdentExpr); ok && right.IsTruthy() {
+				if err := ev.env.Set(ident.Name, right); err != nil {
+					return nil, &DoomError{Message: err.Error()}
+				}
+				return right, nil
+			}
+		}
 		return BoolVal(ev.valuesEqual(left, right)), nil
 	case "===":
 		return BoolVal(ev.valuesStrictEqual(left, right)), nil
@@ -430,7 +439,30 @@ func (ev *Evaluator) valuesEqual(a, b *Value) bool {
 }
 
 func (ev *Evaluator) valuesStrictEqual(a, b *Value) bool {
-	return ev.valuesEqual(a, b)
+	if a.Kind != b.Kind {
+		return false
+	}
+	switch a.Kind {
+	case ValInt:
+		return a.Int == b.Int
+	case ValFloat:
+		return a.Float == b.Float
+	case ValBool:
+		return a.Bool == b.Bool
+	case ValStr:
+		return a.Str == b.Str
+	case ValNil:
+		return true
+	case ValOk:
+		return ev.valuesStrictEqual(a.Inner, b.Inner)
+	case ValErr:
+		return ev.valuesStrictEqual(a.Inner, b.Inner)
+	case ValPtr:
+		return a.Int == b.Int
+	default:
+		// Arrays, Maps, Fns: reference identity (always false for distinct values)
+		return a == b
+	}
 }
 
 func toFloat(v *Value) float64 {
@@ -776,13 +808,12 @@ func (ev *Evaluator) evalGuardExpr(expr *parser.GuardExpr) (*Value, error) {
 		return nil, err
 	}
 	if !cond.IsTruthy() {
-		_, err := ev.evalExpr(expr.ElseBody)
+		val, err := ev.evalExpr(expr.ElseBody)
 		if err != nil {
 			return nil, err
 		}
-		// If the else body didn't doom, we doom anyway since guard semantics
-		// require non-local exit when condition is falsy.
-		return nil, &DoomError{Message: "guard failed"}
+		// Guard semantics require non-local exit. Use the else body's value.
+		return nil, &DoomError{Message: val.String()}
 	}
 	return NilVal(), nil
 }
