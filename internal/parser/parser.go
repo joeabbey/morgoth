@@ -228,7 +228,9 @@ func (p *Parser) parseLetStmt() *LetStmt {
 
 func (p *Parser) parseConstStmt() *ConstStmt {
 	stmt := &ConstStmt{Token: p.curToken}
-	if !p.expectPeek(token.IDENT) {
+	p.nextToken() // move past const
+	if !p.curIs(token.IDENT) && !p.curIs(token.OK) && !p.curIs(token.ERR) {
+		p.addError(fmt.Sprintf("expected identifier after const, got %s (%q)", p.curToken.Type, p.curToken.Literal))
 		return nil
 	}
 	stmt.Name = p.curToken.Literal

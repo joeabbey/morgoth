@@ -443,6 +443,12 @@ func (ev *Evaluator) valuesEqual(a, b *Value) bool {
 		return a.Str == b.Str
 	case ValNil:
 		return true
+	case ValOk:
+		return ev.valuesEqual(a.Inner, b.Inner)
+	case ValErr:
+		return ev.valuesEqual(a.Inner, b.Inner)
+	case ValPtr:
+		return a.Int == b.Int
 	default:
 		return false
 	}

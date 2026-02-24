@@ -615,6 +615,28 @@ func TestAwaitAllExpr(t *testing.T) {
 	}
 }
 
+func TestConstWithKeywordName(t *testing.T) {
+	prog := parse(t, `const ok = 42;`)
+	stmt, ok := prog.Items[0].(*ConstStmt)
+	if !ok {
+		t.Fatalf("expected *ConstStmt, got %T", prog.Items[0])
+	}
+	if stmt.Name != "ok" {
+		t.Errorf("expected name ok, got %s", stmt.Name)
+	}
+}
+
+func TestConstErrName(t *testing.T) {
+	prog := parse(t, `const err = "bad";`)
+	stmt, ok := prog.Items[0].(*ConstStmt)
+	if !ok {
+		t.Fatalf("expected *ConstStmt, got %T", prog.Items[0])
+	}
+	if stmt.Name != "err" {
+		t.Errorf("expected name err, got %s", stmt.Name)
+	}
+}
+
 func TestResultMorParsed(t *testing.T) {
 	input := `fn parse_int(s) {
   if s == "" { err("empty") }

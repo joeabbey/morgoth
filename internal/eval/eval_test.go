@@ -506,6 +506,172 @@ speak xs[0]
 	}
 }
 
+// --- Equality for result types ---
+
+func TestEqualityOkValues(t *testing.T) {
+	out, _, err := evalSource(t, `speak ok(1) == ok(1);`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "true\n" {
+		t.Errorf("got %q, want %q", out, "true\n")
+	}
+}
+
+func TestEqualityErrValues(t *testing.T) {
+	out, _, err := evalSource(t, `speak err("a") == err("a");`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "true\n" {
+		t.Errorf("got %q, want %q", out, "true\n")
+	}
+}
+
+func TestEqualityOkVsErr(t *testing.T) {
+	out, _, err := evalSource(t, `speak ok(1) == err(1);`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "false\n" {
+		t.Errorf("got %q, want %q", out, "false\n")
+	}
+}
+
+func TestInequalityOkValues(t *testing.T) {
+	out, _, err := evalSource(t, `speak ok(1) != ok(2);`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "true\n" {
+		t.Errorf("got %q, want %q", out, "true\n")
+	}
+}
+
+// --- Shadowing in same scope ---
+
+func TestShadowingSameScope(t *testing.T) {
+	out, _, err := evalSource(t, `
+let x = 1;
+let x = 2;
+speak x;
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "2\n" {
+		t.Errorf("got %q, want %q", out, "2\n")
+	}
+}
+
+// --- no_forgiveness mode ---
+
+func TestNoForgivenessMode(t *testing.T) {
+	out, _, err := evalSource(t, `
+decree "no_forgiveness"
+const x = 5
+let result = sorry(x)
+speak result
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "err(no)\n" {
+		t.Errorf("got %q, want %q", out, "err(no)\n")
+	}
+}
+
+func TestNoForgivenessConstStillLocked(t *testing.T) {
+	_, _, err := evalSource(t, `
+decree "no_forgiveness"
+const x = 5
+sorry(x)
+x = 10
+`)
+	if err == nil {
+		t.Fatal("expected error reassigning const in no_forgiveness mode")
+	}
+}
+
+// --- Negative match pattern ---
+
+func TestMatchNegativeLiteral(t *testing.T) {
+	out, _, err := evalSource(t, `
+match -1 {
+  -1 => speak "negative one",
+  _ => speak "other",
+}
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "negative one\n" {
+		t.Errorf("got %q, want %q", out, "negative one\n")
+	}
+}
+
+// --- Float arithmetic ---
+
+func TestFloatArithmetic(t *testing.T) {
+	tests := []struct {
+		source string
+		want   string
+	}{
+		{`speak 1.5 + 2.5;`, "4\n"},
+		{`speak 10.0 - 3.5;`, "6.5\n"},
+		{`speak 2.0 * 3.0;`, "6\n"},
+		{`speak 7.0 / 2.0;`, "3.5\n"},
+	}
+	for _, tt := range tests {
+		out, _, err := evalSource(t, tt.source)
+		if err != nil {
+			t.Errorf("source %q: unexpected error: %v", tt.source, err)
+			continue
+		}
+		if out != tt.want {
+			t.Errorf("source %q: got %q, want %q", tt.source, out, tt.want)
+		}
+	}
+}
+
+// --- len on maps ---
+
+func TestLenMap(t *testing.T) {
+	out, _, err := evalSource(t, `
+decree "deterministic_hashing"
+let m = { "a": 1, "b": 2, "c": 3 }
+speak len(m)
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "3\n" {
+		t.Errorf("got %q, want %q", out, "3\n")
+	}
+}
+
+// --- ? passthrough on non-result ---
+
+func TestPropagatePassthrough(t *testing.T) {
+	out, _, err := evalSource(t, `
+fn get() {
+  let x = 42?
+  ok(x)
+}
+match get() {
+  ok(v) => speak v,
+  err(e) => speak e,
+}
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// 42 is not a result type, so ? passes through unchanged
+	if out != "42\n" {
+		t.Errorf("got %q, want %q", out, "42\n")
+	}
+}
+
 func testExampleFile(t *testing.T, filename, expected string) {
 	t.Helper()
 
