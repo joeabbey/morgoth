@@ -55,13 +55,11 @@ func (e *Env) Set(name string, val *Value) error {
 }
 
 // Forgive marks a const binding as forgiven so it can be reassigned.
+// Only searches the current scope — sorry() must be called in the same scope as the const.
 func (e *Env) Forgive(name string) error {
 	if b, ok := e.bindings[name]; ok {
 		b.Forgiven = true
 		return nil
 	}
-	if e.parent != nil {
-		return e.parent.Forgive(name)
-	}
-	return fmt.Errorf("undefined variable: %s", name)
+	return fmt.Errorf("sorry: %s not found in current scope", name)
 }

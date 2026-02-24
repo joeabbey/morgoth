@@ -34,6 +34,13 @@ type PropagateError struct {
 
 func (e *PropagateError) Error() string { return "propagate error" }
 
+// GuardReturnSignal carries a value from a failed guard out of the enclosing function.
+type GuardReturnSignal struct {
+	Value *Value
+}
+
+func (e *GuardReturnSignal) Error() string { return "guard return" }
+
 // Evaluator walks the AST and produces values.
 type Evaluator struct {
 	env     *Env
@@ -61,6 +68,14 @@ func (ev *Evaluator) Eval(program *parser.Program) (*Value, error) {
 	for _, item := range program.Items {
 		val, err := ev.evalItem(item)
 		if err != nil {
+			// Convert guard returns at top level to doom
+			if gs, ok := err.(*GuardReturnSignal); ok {
+				return nil, &DoomError{Message: fmt.Sprintf("unhandled guard return: %s", gs.Value.String())}
+			}
+			// Convert ? propagation at top level to doom
+			if pe, ok := err.(*PropagateError); ok {
+				return nil, &DoomError{Message: fmt.Sprintf("unhandled error propagation: %s", pe.Value.String())}
+			}
 			return nil, err
 		}
 		result = val
@@ -573,6 +588,8 @@ func (ev *Evaluator) callFunction(fn *FnValue, args []*Value) (*Value, error) {
 		switch e := err.(type) {
 		case *ReturnSignal:
 			return e.Value, nil
+		case *GuardReturnSignal:
+			return e.Value, nil
 		case *PropagateError:
 			return ErrVal(e.Value), nil
 		case *DoomError:
@@ -822,8 +839,8 @@ func (ev *Evaluator) evalGuardExpr(expr *parser.GuardExpr) (*Value, error) {
 		if err != nil {
 			return nil, err
 		}
-		// Guard semantics require non-local exit. Use the else body's value.
-		return nil, &DoomError{Message: val.String()}
+		// Guard semantics: non-local return from enclosing function with else value.
+		return nil, &GuardReturnSignal{Value: val}
 	}
 	return NilVal(), nil
 }
@@ -960,6 +977,11 @@ func (ev *Evaluator) evalSorryExpr(expr *parser.SorryExpr) (*Value, error) {
 	return OkVal(NilVal()), nil
 }
 
-func (ev *Evaluator) evalChantExpr(_ *parser.ChantExpr) (*Value, error) {
+func (ev *Evaluator) evalChantExpr(expr *parser.ChantExpr) (*Value, error) {
+	// Evaluate the argument for side effects, even though result is stubbed.
+	_, err := ev.evalExpr(expr.Name)
+	if err != nil {
+		return nil, err
+	}
 	return OkVal(NilVal()), nil
 }
