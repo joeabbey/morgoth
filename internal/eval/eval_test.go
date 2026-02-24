@@ -409,22 +409,184 @@ func TestExampleResult(t *testing.T) {
 }
 
 func TestGuardPropagatesElseValue(t *testing.T) {
-	_, _, err := evalSource(t, `
+	// Guard should cause non-local return from enclosing function with else value.
+	out, _, err := evalSource(t, `
 fn check(x) {
   guard x > 0 else "must be positive"
+  ok(x)
+}
+speak check(-1);
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "must be positive\n" {
+		t.Errorf("got %q, want %q", out, "must be positive\n")
+	}
+}
+
+func TestGuardReturnFromFunction(t *testing.T) {
+	out, _, err := evalSource(t, `
+fn check(x) {
+  guard x > 0 else err("must be positive")
+  ok(x)
+}
+match check(-1) {
+  ok(v) => speak v,
+  err(e) => speak "error: " + e,
+}
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "error: must be positive\n" {
+		t.Errorf("got %q, want %q", out, "error: must be positive\n")
+	}
+}
+
+func TestGuardWithDoomStillDooms(t *testing.T) {
+	_, _, err := evalSource(t, `
+fn check(x) {
+  guard x > 0 else doom("negative")
   ok(x)
 }
 check(-1);
 `)
 	if err == nil {
-		t.Fatal("expected doom error from failed guard")
+		t.Fatal("expected doom error")
 	}
-	if doomErr, ok := err.(*DoomError); ok {
-		if doomErr.Message != "must be positive" {
-			t.Errorf("got doom message %q, want %q", doomErr.Message, "must be positive")
-		}
-	} else {
-		t.Errorf("expected *DoomError, got %T: %v", err, err)
+	doomErr, ok := err.(*DoomError)
+	if !ok {
+		t.Fatalf("expected *DoomError, got %T: %v", err, err)
+	}
+	if doomErr.Message != "negative" {
+		t.Errorf("got %q, want %q", doomErr.Message, "negative")
+	}
+}
+
+func TestPropagateAtTopLevelDooms(t *testing.T) {
+	_, _, err := evalSource(t, `err("oops")?;`)
+	if err == nil {
+		t.Fatal("expected error from ? at top level")
+	}
+	doomErr, ok := err.(*DoomError)
+	if !ok {
+		t.Fatalf("expected *DoomError, got %T: %v", err, err)
+	}
+	if !strings.Contains(doomErr.Message, "oops") {
+		t.Errorf("expected doom message to contain 'oops', got %q", doomErr.Message)
+	}
+}
+
+func TestSorrySameScope(t *testing.T) {
+	out, _, err := evalSource(t, `
+const x = 5;
+sorry(x);
+x = 6;
+speak x;
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "6\n" {
+		t.Errorf("got %q, want %q", out, "6\n")
+	}
+}
+
+func TestSorryCrossScope(t *testing.T) {
+	out, _, err := evalSource(t, `
+const x = 5;
+fn forgive_x() {
+  sorry(x)
+}
+let result = forgive_x();
+speak result;
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, "err(") {
+		t.Errorf("expected err result from sorry in wrong scope, got %q", out)
+	}
+}
+
+func TestChantEvaluatesArgument(t *testing.T) {
+	_, _, err := evalSource(t, `chant doom("should doom");`)
+	if err == nil {
+		t.Fatal("expected doom error from chant argument evaluation")
+	}
+}
+
+// --- Index assignment ---
+
+func TestArrayIndexAssignment(t *testing.T) {
+	out, _, err := evalSource(t, `
+decree "zero_indexed"
+let xs = [10, 20, 30]
+xs[1] = 99
+speak xs[1]
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "99\n" {
+		t.Errorf("got %q, want %q", out, "99\n")
+	}
+}
+
+func TestMapIndexAssignment(t *testing.T) {
+	out, _, err := evalSource(t, `
+decree "deterministic_hashing"
+let m = { "a": 1, "b": 2 }
+m["a"] = 42
+speak m["a"]
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "42\n" {
+		t.Errorf("got %q, want %q", out, "42\n")
+	}
+}
+
+func TestMapDotAssignment(t *testing.T) {
+	out, _, err := evalSource(t, `
+decree "deterministic_hashing"
+let m = { "x": 1 }
+m.x = 100
+speak m.x
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "100\n" {
+		t.Errorf("got %q, want %q", out, "100\n")
+	}
+}
+
+func TestMapAddNewKey(t *testing.T) {
+	out, _, err := evalSource(t, `
+decree "deterministic_hashing"
+let m = { "a": 1 }
+m["b"] = 2
+speak m["b"]
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "2\n" {
+		t.Errorf("got %q, want %q", out, "2\n")
+	}
+}
+
+func TestArrayIndexAssignOutOfBounds(t *testing.T) {
+	_, _, err := evalSource(t, `
+decree "zero_indexed"
+let xs = [1, 2, 3]
+xs[5] = 99
+`)
+	if err == nil {
+		t.Fatal("expected out of bounds error")
 	}
 }
 

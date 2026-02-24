@@ -421,18 +421,35 @@ func (p *Parser) parseBinaryExpr(left Expr) Expr {
 }
 
 func (p *Parser) parseAssignExpr(left Expr) Expr {
-	ident, ok := left.(*IdentExpr)
-	if !ok {
-		p.addError("left side of assignment must be an identifier")
+	tok := p.curToken // the = token
+	p.nextToken()     // move past =
+	value := p.parseExpression(precLowest)
+
+	switch lhs := left.(type) {
+	case *IdentExpr:
+		return &AssignExpr{
+			Token: tok,
+			Name:  lhs.Name,
+			Value: value,
+		}
+	case *IndexExpr:
+		return &IndexAssignExpr{
+			Token: tok,
+			Left:  lhs.Left,
+			Index: lhs.Index,
+			Value: value,
+		}
+	case *DotExpr:
+		return &DotAssignExpr{
+			Token: tok,
+			Left:  lhs.Left,
+			Field: lhs.Field,
+			Value: value,
+		}
+	default:
+		p.addError("left side of assignment must be an identifier, index expression, or dot expression")
 		return nil
 	}
-	expr := &AssignExpr{
-		Token: p.curToken,
-		Name:  ident.Name,
-	}
-	p.nextToken() // move past =
-	expr.Value = p.parseExpression(precLowest)
-	return expr
 }
 
 func (p *Parser) parseCallExpr(left Expr) Expr {

@@ -34,6 +34,13 @@ type PropagateError struct {
 
 func (e *PropagateError) Error() string { return "propagate error" }
 
+// GuardReturnSignal carries a value from a failed guard out of the enclosing function.
+type GuardReturnSignal struct {
+	Value *Value
+}
+
+func (e *GuardReturnSignal) Error() string { return "guard return" }
+
 // Evaluator walks the AST and produces values.
 type Evaluator struct {
 	env     *Env
@@ -61,6 +68,12 @@ func (ev *Evaluator) Eval(program *parser.Program) (*Value, error) {
 	for _, item := range program.Items {
 		val, err := ev.evalItem(item)
 		if err != nil {
+			if gs, ok := err.(*GuardReturnSignal); ok {
+				return nil, &DoomError{Message: fmt.Sprintf("unhandled guard return: %s", gs.Value.String())}
+			}
+			if pe, ok := err.(*PropagateError); ok {
+				return nil, &DoomError{Message: fmt.Sprintf("unhandled error propagation: %s", pe.Value.String())}
+			}
 			return nil, err
 		}
 		result = val
@@ -187,6 +200,10 @@ func (ev *Evaluator) evalExpr(expr parser.Expr) (*Value, error) {
 		return ev.evalUnaryExpr(n)
 	case *parser.AssignExpr:
 		return ev.evalAssignExpr(n)
+	case *parser.IndexAssignExpr:
+		return ev.evalIndexAssignExpr(n)
+	case *parser.DotAssignExpr:
+		return ev.evalDotAssignExpr(n)
 	case *parser.CallExpr:
 		return ev.evalCallExpr(n)
 	case *parser.IndexExpr:
@@ -522,6 +539,57 @@ func (ev *Evaluator) evalAssignExpr(expr *parser.AssignExpr) (*Value, error) {
 	return val, nil
 }
 
+func (ev *Evaluator) evalIndexAssignExpr(expr *parser.IndexAssignExpr) (*Value, error) {
+	left, err := ev.evalExpr(expr.Left)
+	if err != nil {
+		return nil, err
+	}
+	index, err := ev.evalExpr(expr.Index)
+	if err != nil {
+		return nil, err
+	}
+	val, err := ev.evalExpr(expr.Value)
+	if err != nil {
+		return nil, err
+	}
+
+	switch left.Kind {
+	case ValArray:
+		if index.Kind != ValInt {
+			return nil, &DoomError{Message: "array index must be int"}
+		}
+		idx := ev.adjustIndex(index.Int)
+		if idx < 0 || idx >= int64(len(left.Array)) {
+			return nil, &DoomError{Message: fmt.Sprintf("array index out of bounds: %d", idx)}
+		}
+		left.Array[idx] = val
+		return val, nil
+	case ValMap:
+		key := index.String()
+		left.Map.Set(key, val)
+		return val, nil
+	default:
+		return nil, &DoomError{Message: fmt.Sprintf("cannot assign to index of %s", left.String())}
+	}
+}
+
+func (ev *Evaluator) evalDotAssignExpr(expr *parser.DotAssignExpr) (*Value, error) {
+	left, err := ev.evalExpr(expr.Left)
+	if err != nil {
+		return nil, err
+	}
+	val, err := ev.evalExpr(expr.Value)
+	if err != nil {
+		return nil, err
+	}
+
+	if left.Kind != ValMap {
+		return nil, &DoomError{Message: fmt.Sprintf("cannot assign field %s on %s", expr.Field, left.String())}
+	}
+	left.Map.Set(expr.Field, val)
+	return val, nil
+}
+
 func (ev *Evaluator) evalCallExpr(expr *parser.CallExpr) (*Value, error) {
 	// Evaluate args first (needed for both builtins and user functions).
 	args := make([]*Value, len(expr.Args))
@@ -572,6 +640,8 @@ func (ev *Evaluator) callFunction(fn *FnValue, args []*Value) (*Value, error) {
 	if err != nil {
 		switch e := err.(type) {
 		case *ReturnSignal:
+			return e.Value, nil
+		case *GuardReturnSignal:
 			return e.Value, nil
 		case *PropagateError:
 			return ErrVal(e.Value), nil
@@ -822,8 +892,8 @@ func (ev *Evaluator) evalGuardExpr(expr *parser.GuardExpr) (*Value, error) {
 		if err != nil {
 			return nil, err
 		}
-		// Guard semantics require non-local exit. Use the else body's value.
-		return nil, &DoomError{Message: val.String()}
+		// Guard semantics: non-local return from enclosing function with else value.
+		return nil, &GuardReturnSignal{Value: val}
 	}
 	return NilVal(), nil
 }
@@ -960,6 +1030,10 @@ func (ev *Evaluator) evalSorryExpr(expr *parser.SorryExpr) (*Value, error) {
 	return OkVal(NilVal()), nil
 }
 
-func (ev *Evaluator) evalChantExpr(_ *parser.ChantExpr) (*Value, error) {
+func (ev *Evaluator) evalChantExpr(expr *parser.ChantExpr) (*Value, error) {
+	_, err := ev.evalExpr(expr.Name)
+	if err != nil {
+		return nil, err
+	}
 	return OkVal(NilVal()), nil
 }
