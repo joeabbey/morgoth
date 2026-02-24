@@ -1,4 +1,5 @@
 # examples/guard.mor
+decree "zero_indexed";
 fn main(args) {
   guard len(args) >= 2 else doom("usage: app <name>");
   let name = args[1];

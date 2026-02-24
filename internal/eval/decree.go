@@ -13,7 +13,7 @@ type DecreeConfig struct {
 // NewDecreeConfig returns a DecreeConfig with defaults.
 func NewDecreeConfig() *DecreeConfig {
 	return &DecreeConfig{
-		IndexingBase: "zero",
+		IndexingBase: "weekday",
 	}
 }
 

@@ -408,6 +408,104 @@ func TestExampleResult(t *testing.T) {
 	testExampleFile(t, "result.mor", "43\n")
 }
 
+func TestGuardPropagatesElseValue(t *testing.T) {
+	_, _, err := evalSource(t, `
+fn check(x) {
+  guard x > 0 else "must be positive"
+  ok(x)
+}
+check(-1);
+`)
+	if err == nil {
+		t.Fatal("expected doom error from failed guard")
+	}
+	if doomErr, ok := err.(*DoomError); ok {
+		if doomErr.Message != "must be positive" {
+			t.Errorf("got doom message %q, want %q", doomErr.Message, "must be positive")
+		}
+	} else {
+		t.Errorf("expected *DoomError, got %T: %v", err, err)
+	}
+}
+
+func TestStrictEqualDifferentTypes(t *testing.T) {
+	// === should be false for different types even if values look similar
+	out, _, err := evalSource(t, `speak 1 === 1;`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "true\n" {
+		t.Errorf("got %q, want %q", out, "true\n")
+	}
+
+	// ok(1) === ok(1) should be true with strict equal
+	out2, _, err := evalSource(t, `speak ok(1) === ok(1);`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out2 != "true\n" {
+		t.Errorf("got %q, want %q", out2, "true\n")
+	}
+
+	// ok(1) === err(1) should be false
+	out3, _, err := evalSource(t, `speak ok(1) === err(1);`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out3 != "false\n" {
+		t.Errorf("got %q, want %q", out3, "false\n")
+	}
+}
+
+func TestAmbitiousMode(t *testing.T) {
+	out, _, err := evalSource(t, `
+decree "ambitious_mode"
+let x = 5
+x == 10
+speak x
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// In ambitious_mode, x == 10 should assign 10 to x (since 10 is truthy)
+	if out != "10\n" {
+		t.Errorf("got %q, want %q", out, "10\n")
+	}
+}
+
+func TestAmbitiousModeNoAssignFalsy(t *testing.T) {
+	out, _, err := evalSource(t, `
+decree "ambitious_mode"
+let x = 5
+x == 0
+speak x
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// 0 is falsy, so == should compare normally (returns false), x stays 5
+	if out != "5\n" {
+		t.Errorf("got %q, want %q", out, "5\n")
+	}
+}
+
+func TestDefaultIndexingIsWeekday(t *testing.T) {
+	// Without any decree, indexing should be "weekday" mode
+	// We can't test the exact behavior deterministically (depends on day),
+	// but we can verify that after decree "zero_indexed", index 0 works
+	out, _, err := evalSource(t, `
+decree "zero_indexed"
+let xs = [10, 20, 30]
+speak xs[0]
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "10\n" {
+		t.Errorf("got %q, want %q", out, "10\n")
+	}
+}
+
 func testExampleFile(t *testing.T, filename, expected string) {
 	t.Helper()
 
