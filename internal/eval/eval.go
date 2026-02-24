@@ -217,6 +217,16 @@ func (ev *Evaluator) evalExpr(expr parser.Expr) (*Value, error) {
 		return ev.evalSorryExpr(n)
 	case *parser.ChantExpr:
 		return ev.evalChantExpr(n)
+	case *parser.SpawnExpr:
+		// MVP stub: run spawn body synchronously, return nil.
+		_, err := ev.evalBlockExpr(n.Body)
+		if err != nil {
+			return nil, err
+		}
+		return NilVal(), nil
+	case *parser.AwaitAllExpr:
+		// MVP stub: no-op since spawn runs synchronously.
+		return NilVal(), nil
 	default:
 		return nil, &DoomError{Message: fmt.Sprintf("unknown expr type: %T", expr)}
 	}
