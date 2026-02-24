@@ -238,6 +238,28 @@ type AssignExpr struct {
 func (e *AssignExpr) TokenLiteral() string { return e.Token.Literal }
 func (e *AssignExpr) exprNode()            {}
 
+// IndexAssignExpr represents left[index] = value.
+type IndexAssignExpr struct {
+	Token token.Token // the ASSIGN token
+	Left  Expr        // the collection expression
+	Index Expr        // the index expression
+	Value Expr        // the value to assign
+}
+
+func (e *IndexAssignExpr) TokenLiteral() string { return e.Token.Literal }
+func (e *IndexAssignExpr) exprNode()            {}
+
+// DotAssignExpr represents left.field = value.
+type DotAssignExpr struct {
+	Token token.Token // the ASSIGN token
+	Left  Expr        // the object expression
+	Field string      // the field name
+	Value Expr        // the value to assign
+}
+
+func (e *DotAssignExpr) TokenLiteral() string { return e.Token.Literal }
+func (e *DotAssignExpr) exprNode()            {}
+
 // CallExpr represents function(args...).
 type CallExpr struct {
 	Token    token.Token // the LPAREN
