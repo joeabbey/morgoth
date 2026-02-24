@@ -506,6 +506,79 @@ speak xs[0]
 	}
 }
 
+// --- Index assignment ---
+
+func TestArrayIndexAssignment(t *testing.T) {
+	out, _, err := evalSource(t, `
+decree "zero_indexed"
+let xs = [10, 20, 30]
+xs[1] = 99
+speak xs[1]
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "99\n" {
+		t.Errorf("got %q, want %q", out, "99\n")
+	}
+}
+
+func TestMapIndexAssignment(t *testing.T) {
+	out, _, err := evalSource(t, `
+decree "deterministic_hashing"
+let m = { "a": 1, "b": 2 }
+m["a"] = 42
+speak m["a"]
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "42\n" {
+		t.Errorf("got %q, want %q", out, "42\n")
+	}
+}
+
+func TestMapDotAssignment(t *testing.T) {
+	out, _, err := evalSource(t, `
+decree "deterministic_hashing"
+let m = { "x": 1 }
+m.x = 100
+speak m.x
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "100\n" {
+		t.Errorf("got %q, want %q", out, "100\n")
+	}
+}
+
+func TestMapAddNewKey(t *testing.T) {
+	out, _, err := evalSource(t, `
+decree "deterministic_hashing"
+let m = { "a": 1 }
+m["b"] = 2
+speak m["b"]
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "2\n" {
+		t.Errorf("got %q, want %q", out, "2\n")
+	}
+}
+
+func TestArrayIndexAssignOutOfBounds(t *testing.T) {
+	_, _, err := evalSource(t, `
+decree "zero_indexed"
+let xs = [1, 2, 3]
+xs[5] = 99
+`)
+	if err == nil {
+		t.Fatal("expected out of bounds error")
+	}
+}
+
 func testExampleFile(t *testing.T, filename, expected string) {
 	t.Helper()
 

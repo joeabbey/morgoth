@@ -187,6 +187,10 @@ func (ev *Evaluator) evalExpr(expr parser.Expr) (*Value, error) {
 		return ev.evalUnaryExpr(n)
 	case *parser.AssignExpr:
 		return ev.evalAssignExpr(n)
+	case *parser.IndexAssignExpr:
+		return ev.evalIndexAssignExpr(n)
+	case *parser.DotAssignExpr:
+		return ev.evalDotAssignExpr(n)
 	case *parser.CallExpr:
 		return ev.evalCallExpr(n)
 	case *parser.IndexExpr:
@@ -519,6 +523,57 @@ func (ev *Evaluator) evalAssignExpr(expr *parser.AssignExpr) (*Value, error) {
 	if err := ev.env.Set(expr.Name, val); err != nil {
 		return nil, &DoomError{Message: err.Error()}
 	}
+	return val, nil
+}
+
+func (ev *Evaluator) evalIndexAssignExpr(expr *parser.IndexAssignExpr) (*Value, error) {
+	left, err := ev.evalExpr(expr.Left)
+	if err != nil {
+		return nil, err
+	}
+	index, err := ev.evalExpr(expr.Index)
+	if err != nil {
+		return nil, err
+	}
+	val, err := ev.evalExpr(expr.Value)
+	if err != nil {
+		return nil, err
+	}
+
+	switch left.Kind {
+	case ValArray:
+		if index.Kind != ValInt {
+			return nil, &DoomError{Message: "array index must be int"}
+		}
+		idx := ev.adjustIndex(index.Int)
+		if idx < 0 || idx >= int64(len(left.Array)) {
+			return nil, &DoomError{Message: fmt.Sprintf("array index out of bounds: %d", idx)}
+		}
+		left.Array[idx] = val
+		return val, nil
+	case ValMap:
+		key := index.String()
+		left.Map.Set(key, val)
+		return val, nil
+	default:
+		return nil, &DoomError{Message: fmt.Sprintf("cannot assign to index of %s", left.String())}
+	}
+}
+
+func (ev *Evaluator) evalDotAssignExpr(expr *parser.DotAssignExpr) (*Value, error) {
+	left, err := ev.evalExpr(expr.Left)
+	if err != nil {
+		return nil, err
+	}
+	val, err := ev.evalExpr(expr.Value)
+	if err != nil {
+		return nil, err
+	}
+
+	if left.Kind != ValMap {
+		return nil, &DoomError{Message: fmt.Sprintf("cannot assign field %s on %s", expr.Field, left.String())}
+	}
+	left.Map.Set(expr.Field, val)
 	return val, nil
 }
 

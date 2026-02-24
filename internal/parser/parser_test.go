@@ -615,6 +615,35 @@ func TestAwaitAllExpr(t *testing.T) {
 	}
 }
 
+func TestIndexAssignExpr(t *testing.T) {
+	prog := parse(t, `xs[0] = 5;`)
+	es := prog.Items[0].(*ExprStmt)
+	ia, ok := es.Expression.(*IndexAssignExpr)
+	if !ok {
+		t.Fatalf("expected *IndexAssignExpr, got %T", es.Expression)
+	}
+	left := ia.Left.(*IdentExpr)
+	if left.Name != "xs" {
+		t.Errorf("expected xs, got %s", left.Name)
+	}
+}
+
+func TestDotAssignExpr(t *testing.T) {
+	prog := parse(t, `m.x = 10;`)
+	es := prog.Items[0].(*ExprStmt)
+	da, ok := es.Expression.(*DotAssignExpr)
+	if !ok {
+		t.Fatalf("expected *DotAssignExpr, got %T", es.Expression)
+	}
+	left := da.Left.(*IdentExpr)
+	if left.Name != "m" {
+		t.Errorf("expected m, got %s", left.Name)
+	}
+	if da.Field != "x" {
+		t.Errorf("expected field x, got %s", da.Field)
+	}
+}
+
 func TestResultMorParsed(t *testing.T) {
 	input := `fn parse_int(s) {
   if s == "" { err("empty") }
