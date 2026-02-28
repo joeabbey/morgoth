@@ -1049,3 +1049,98 @@ func TestImmediateFnCall(t *testing.T) {
 		t.Errorf("got %q, want %q", out, "42\n")
 	}
 }
+
+// --- ? operator on non-result values ---
+
+func TestPropagateOnPlainValue(t *testing.T) {
+	out, _, err := evalSource(t, `
+fn get_val() { 42 }
+fn caller() {
+  let x = get_val()?
+  speak x
+}
+caller()
+`)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out != "42\n" {
+		t.Errorf("got %q, want %q", out, "42\n")
+	}
+}
+
+func TestPropagateOnNil(t *testing.T) {
+	// nil? inside a function propagates as err("nil"), which callFunction
+	// catches and wraps as err("nil") return value.
+	out, result, err := evalSource(t, `
+fn get_nil() { nil }
+fn caller() {
+  let x = get_nil()?
+  speak x
+}
+speak caller()
+`)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	_ = result
+	if out != "err(nil)\n" {
+		t.Errorf("got %q, want %q", out, "err(nil)\n")
+	}
+}
+
+// --- and/or short-circuit with side effects ---
+
+func TestAndShortCircuit(t *testing.T) {
+	out, _, err := evalSource(t, `
+let x = false and speak "should not print"
+speak "done"
+`)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out != "done\n" {
+		t.Errorf("got %q, want %q (and should short-circuit)", out, "done\n")
+	}
+}
+
+func TestOrShortCircuit(t *testing.T) {
+	out, _, err := evalSource(t, `
+let x = true or speak "should not print"
+speak "done"
+`)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out != "done\n" {
+		t.Errorf("got %q, want %q (or should short-circuit)", out, "done\n")
+	}
+}
+
+// --- const with ok/err as name ---
+
+func TestConstOkName(t *testing.T) {
+	out, _, err := evalSource(t, `
+const ok = "works"
+speak ok
+`)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out != "works\n" {
+		t.Errorf("got %q, want %q", out, "works\n")
+	}
+}
+
+func TestConstErrName(t *testing.T) {
+	out, _, err := evalSource(t, `
+const err = "also works"
+speak err
+`)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out != "also works\n" {
+		t.Errorf("got %q, want %q", out, "also works\n")
+	}
+}
