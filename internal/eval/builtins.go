@@ -1,6 +1,9 @@
 package eval
 
-import "os"
+import (
+	"os"
+	"unicode/utf8"
+)
 
 // callBuiltin dispatches to built-in functions that are invoked via CallExpr
 // (as opposed to speak/doom/sorry/chant which are special AST nodes).
@@ -34,7 +37,7 @@ func (ev *Evaluator) builtinLen(args []*Value) (*Value, bool, error) {
 	case ValArray:
 		return IntVal(int64(len(args[0].Array))), true, nil
 	case ValStr:
-		return IntVal(int64(len(args[0].Str))), true, nil
+		return IntVal(int64(utf8.RuneCountInString(args[0].Str))), true, nil
 	case ValMap:
 		return IntVal(int64(args[0].Map.Len())), true, nil
 	default:

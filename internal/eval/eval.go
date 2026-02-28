@@ -93,7 +93,18 @@ func (ev *Evaluator) evalItem(item parser.Item) (*Value, error) {
 	case *parser.FnDecl:
 		return ev.evalFnDecl(n)
 	case *parser.ExternDecl:
-		// Extern declarations are just registered as stubs.
+		// Register a stub function that returns nil for all extern declarations.
+		params := make([]string, len(n.Params))
+		for i, p := range n.Params {
+			params[i] = p.Name
+		}
+		stub := &FnValue{
+			Name:   n.Name,
+			Params: params,
+			Body:   nil, // no body — callFunction handles nil body
+			Env:    ev.env,
+		}
+		ev.env.Define(n.Name, FnVal(stub), false)
 		return NilVal(), nil
 	case *parser.LetStmt:
 		return ev.evalLetStmt(n)
@@ -657,6 +668,11 @@ func (ev *Evaluator) evalCallExpr(expr *parser.CallExpr) (*Value, error) {
 }
 
 func (ev *Evaluator) callFunction(fn *FnValue, args []*Value) (*Value, error) {
+	// Extern stub: no body, just return nil.
+	if fn.Body == nil {
+		return NilVal(), nil
+	}
+
 	callEnv := NewEnv(fn.Env)
 	for i, param := range fn.Params {
 		if i < len(args) {
@@ -719,11 +735,12 @@ func (ev *Evaluator) evalIndexExpr(expr *parser.IndexExpr) (*Value, error) {
 		if index.Kind != ValInt {
 			return nil, &DoomError{Message: "string index must be int"}
 		}
+		runes := []rune(left.Str)
 		idx := ev.adjustIndex(index.Int)
-		if idx < 0 || idx >= int64(len(left.Str)) {
+		if idx < 0 || idx >= int64(len(runes)) {
 			return nil, &DoomError{Message: fmt.Sprintf("string index out of bounds: %d", idx)}
 		}
-		return StrVal(string(left.Str[idx])), nil
+		return StrVal(string(runes[idx])), nil
 	default:
 		return nil, &DoomError{Message: fmt.Sprintf("cannot index into %s", left.String())}
 	}
@@ -820,7 +837,7 @@ func (ev *Evaluator) evalMatchExpr(expr *parser.MatchExpr) (*Value, error) {
 			return result, err
 		}
 	}
-	return NilVal(), nil
+	return nil, &DoomError{Message: fmt.Sprintf("match exhausted: no arm matched value %s", subject.String())}
 }
 
 func (ev *Evaluator) matchPattern(pat parser.Pattern, subject *Value) (bool, map[string]*Value) {
@@ -1013,7 +1030,11 @@ func (ev *Evaluator) evalAsExpr(expr *parser.AsExpr) (*Value, error) {
 			}
 			return IntVal(0), nil
 		default:
-			return nil, &DoomError{Message: fmt.Sprintf("cannot cast %s to int", left.String())}
+			msg := fmt.Sprintf("cannot cast %s to int", left.String())
+			if ev.decrees.SoftCasts {
+				return ErrVal(StrVal(msg)), nil
+			}
+			return nil, &DoomError{Message: msg}
 		}
 	case "float":
 		switch left.Kind {
@@ -1024,18 +1045,30 @@ func (ev *Evaluator) evalAsExpr(expr *parser.AsExpr) (*Value, error) {
 		case ValStr:
 			f, err := strconv.ParseFloat(strings.TrimSpace(left.Str), 64)
 			if err != nil {
-				return nil, &DoomError{Message: fmt.Sprintf("cannot convert %q to float", left.Str)}
+				msg := fmt.Sprintf("cannot convert %q to float", left.Str)
+				if ev.decrees.SoftCasts {
+					return ErrVal(StrVal(msg)), nil
+				}
+				return nil, &DoomError{Message: msg}
 			}
 			return FloatVal(f), nil
 		default:
-			return nil, &DoomError{Message: fmt.Sprintf("cannot cast %s to float", left.String())}
+			msg := fmt.Sprintf("cannot cast %s to float", left.String())
+			if ev.decrees.SoftCasts {
+				return ErrVal(StrVal(msg)), nil
+			}
+			return nil, &DoomError{Message: msg}
 		}
 	case "str", "string":
 		return StrVal(left.String()), nil
 	case "bool":
 		return BoolVal(left.IsTruthy()), nil
 	default:
-		return nil, &DoomError{Message: fmt.Sprintf("unknown cast target: %s", expr.TypeName)}
+		msg := fmt.Sprintf("unknown cast target: %s", expr.TypeName)
+		if ev.decrees.SoftCasts {
+			return ErrVal(StrVal(msg)), nil
+		}
+		return nil, &DoomError{Message: msg}
 	}
 }
 
