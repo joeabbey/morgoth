@@ -74,6 +74,10 @@ func (ev *Evaluator) Eval(program *parser.Program) (*Value, error) {
 			if pe, ok := err.(*PropagateError); ok {
 				return nil, &DoomError{Message: fmt.Sprintf("unhandled error propagation: %s", pe.Value.String())}
 			}
+			if rs, ok := err.(*ReturnSignal); ok {
+				_ = rs
+				return nil, &DoomError{Message: "return outside function"}
+			}
 			return nil, err
 		}
 		result = val

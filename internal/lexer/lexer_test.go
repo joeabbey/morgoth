@@ -18,6 +18,7 @@ func TestSimpleTokens(t *testing.T) {
 		token.LPAREN, token.RPAREN, token.LBRACKET, token.RBRACKET,
 		token.LBRACE, token.RBRACE,
 		token.COMMA, token.SEMICOLON, token.COLON, token.ARROW, token.DOT, token.QUESTION,
+		token.SEMICOLON, // QUESTION is now a semicolon trigger at EOF
 		token.EOF,
 	}
 	l := New(input)

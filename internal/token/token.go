@@ -195,7 +195,7 @@ func LookupIdent(ident string) TokenType {
 // can trigger automatic semicolon insertion.
 func SemicolonTrigger(t TokenType) bool {
 	switch t {
-	case INT, FLOAT, STRING, IDENT, TRUE, FALSE, NIL, RPAREN, RBRACKET, RBRACE:
+	case INT, FLOAT, STRING, IDENT, TRUE, FALSE, NIL, RPAREN, RBRACKET, RBRACE, QUESTION, OK, ERR:
 		return true
 	}
 	return false
@@ -211,6 +211,7 @@ var statementStarters = map[TokenType]bool{
 	IF:     true,
 	GUARD:  true,
 	RETURN: true,
+	DECREE: true,
 }
 
 func StartsStatement(t TokenType) bool {
