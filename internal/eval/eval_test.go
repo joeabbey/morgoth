@@ -703,6 +703,98 @@ func TestDecreeSemicolonInsertion(t *testing.T) {
 	}
 }
 
+func TestMatchTypedNil(t *testing.T) {
+	out, _, err := evalSource(t, `
+match nil {
+  n: nil => speak "got nil",
+  _ => speak "other",
+}
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "got nil\n" {
+		t.Errorf("got %q, want %q", out, "got nil\n")
+	}
+}
+
+func TestMatchTypedOk(t *testing.T) {
+	out, _, err := evalSource(t, `
+match ok(42) {
+  v: ok => speak "ok value",
+  v: err => speak "err value",
+  _ => speak "other",
+}
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "ok value\n" {
+		t.Errorf("got %q, want %q", out, "ok value\n")
+	}
+}
+
+func TestMatchTypedResult(t *testing.T) {
+	out, _, err := evalSource(t, `
+match err("bad") {
+  v: result => speak "is a result",
+  _ => speak "not a result",
+}
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "is a result\n" {
+		t.Errorf("got %q, want %q", out, "is a result\n")
+	}
+}
+
+func TestMapIntKeys(t *testing.T) {
+	out, _, err := evalSource(t, `
+decree "deterministic_hashing"
+let m = { 1: "one", 2: "two" }
+speak m[1]
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "one\n" {
+		t.Errorf("got %q, want %q", out, "one\n")
+	}
+}
+
+func TestAmbitiousModeIndexAssign(t *testing.T) {
+	out, _, err := evalSource(t, `
+decree "ambitious_mode"
+decree "zero_indexed"
+let xs = [1, 2, 3]
+xs[0] == 99
+speak xs[0]
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "99\n" {
+		t.Errorf("got %q, want %q", out, "99\n")
+	}
+}
+
+func TestAmbitiousModeDotAssign(t *testing.T) {
+	out, _, err := evalSource(t, `
+decree "ambitious_mode"
+decree "deterministic_hashing"
+let m = { "x": 1 }
+m.x == 42
+speak m.x
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "42\n" {
+		t.Errorf("got %q, want %q", out, "42\n")
+	}
+}
+
 func testExampleFile(t *testing.T, filename, expected string) {
 	t.Helper()
 
