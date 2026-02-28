@@ -384,29 +384,12 @@ speak m["b"];
 
 // --- Example file golden tests ---
 
-func TestExampleHello(t *testing.T) {
-	testExampleFile(t, "hello.mor", "Hello, Morgoth!\n")
-}
-
-func TestExampleArrays(t *testing.T) {
-	testExampleFile(t, "arrays.mor", "10\n30\n")
-}
-
-func TestExampleDecrees(t *testing.T) {
-	testExampleFile(t, "decrees.mor", "1\n")
-}
-
-func TestExampleGuard(t *testing.T) {
-	testExampleFile(t, "guard.mor", "Hello, Sam\n")
-}
-
-func TestExampleMatch(t *testing.T) {
-	testExampleFile(t, "match.mor", "open\n")
-}
-
-func TestExampleResult(t *testing.T) {
-	testExampleFile(t, "result.mor", "43\n")
-}
+func TestExampleHello(t *testing.T)   { testExampleFile(t, "hello.mor") }
+func TestExampleArrays(t *testing.T)  { testExampleFile(t, "arrays.mor") }
+func TestExampleDecrees(t *testing.T) { testExampleFile(t, "decrees.mor") }
+func TestExampleGuard(t *testing.T)   { testExampleFile(t, "guard.mor") }
+func TestExampleMatch(t *testing.T)   { testExampleFile(t, "match.mor") }
+func TestExampleResult(t *testing.T)  { testExampleFile(t, "result.mor") }
 
 func TestGuardPropagatesElseValue(t *testing.T) {
 	// Guard should cause non-local return from enclosing function with else value.
@@ -795,7 +778,7 @@ speak m.x
 	}
 }
 
-func testExampleFile(t *testing.T, filename, expected string) {
+func testExampleFile(t *testing.T, filename string) {
 	t.Helper()
 
 	// Find the examples directory relative to this test file.
@@ -806,6 +789,14 @@ func testExampleFile(t *testing.T, filename, expected string) {
 	source, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("cannot read %s: %v", path, err)
+	}
+
+	// Read golden file
+	goldenName := strings.TrimSuffix(filename, ".mor") + ".golden"
+	goldenPath := filepath.Join(repoRoot, "testdata", goldenName)
+	expected, err := os.ReadFile(goldenPath)
+	if err != nil {
+		t.Fatalf("cannot read golden %s: %v", goldenPath, err)
 	}
 
 	l := lexer.New(string(source))
@@ -824,7 +815,56 @@ func testExampleFile(t *testing.T, filename, expected string) {
 	}
 
 	got := buf.String()
-	if got != expected {
-		t.Errorf("%s: got %q, want %q", filename, got, expected)
+	if got != string(expected) {
+		t.Errorf("%s: got %q, want %q", filename, got, string(expected))
+	}
+}
+
+func TestExternFnStub(t *testing.T) {
+	out, _, err := evalSource(t, `
+extern fn do_thing(x);
+speak do_thing(42);
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "nil\n" {
+		t.Errorf("got %q, want %q", out, "nil\n")
+	}
+}
+
+func TestSoftCastsAllPaths(t *testing.T) {
+	out, _, err := evalSource(t, `
+decree "soft_casts"
+let x = nil as int
+speak x
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, "err(") {
+		t.Errorf("expected err result from soft cast, got %q", out)
+	}
+}
+
+func TestLenUnicode(t *testing.T) {
+	out, _, err := evalSource(t, `speak len("héllo");`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "5\n" {
+		t.Errorf("got %q, want %q", out, "5\n")
+	}
+}
+
+func TestMatchExhaustion(t *testing.T) {
+	_, _, err := evalSource(t, `
+match 99 {
+  1 => speak "one",
+  2 => speak "two",
+}
+`)
+	if err == nil {
+		t.Fatal("expected doom from exhausted match")
 	}
 }
