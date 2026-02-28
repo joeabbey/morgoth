@@ -326,11 +326,41 @@ func (ev *Evaluator) evalBinaryExpr(expr *parser.BinaryExpr) (*Value, error) {
 	case "%":
 		return ev.evalArith(left, right, "%")
 	case "==":
-		if ev.decrees.AmbitiousMode {
-			// In ambitious_mode, == assigns if LHS is an identifier and RHS is truthy
-			if ident, ok := expr.Left.(*parser.IdentExpr); ok && right.IsTruthy() {
-				if err := ev.env.Set(ident.Name, right); err != nil {
+		if ev.decrees.AmbitiousMode && right.IsTruthy() {
+			switch lhs := expr.Left.(type) {
+			case *parser.IdentExpr:
+				if err := ev.env.Set(lhs.Name, right); err != nil {
 					return nil, &DoomError{Message: err.Error()}
+				}
+				return right, nil
+			case *parser.IndexExpr:
+				collection, err := ev.evalExpr(lhs.Left)
+				if err != nil {
+					return nil, err
+				}
+				index, err := ev.evalExpr(lhs.Index)
+				if err != nil {
+					return nil, err
+				}
+				switch collection.Kind {
+				case ValArray:
+					if index.Kind == ValInt {
+						idx := ev.adjustIndex(index.Int)
+						if idx >= 0 && idx < int64(len(collection.Array)) {
+							collection.Array[idx] = right
+						}
+					}
+				case ValMap:
+					collection.Map.Set(index.String(), right)
+				}
+				return right, nil
+			case *parser.DotExpr:
+				obj, err := ev.evalExpr(lhs.Left)
+				if err != nil {
+					return nil, err
+				}
+				if obj.Kind == ValMap {
+					obj.Map.Set(lhs.Field, right)
 				}
 				return right, nil
 			}
@@ -881,6 +911,14 @@ func (ev *Evaluator) matchesType(val *Value, typeName string) bool {
 		return val.Kind == ValFn
 	case "ptr":
 		return val.Kind == ValPtr
+	case "nil":
+		return val.Kind == ValNil
+	case "ok":
+		return val.Kind == ValOk
+	case "err":
+		return val.Kind == ValErr
+	case "result":
+		return val.Kind == ValOk || val.Kind == ValErr
 	default:
 		return false
 	}

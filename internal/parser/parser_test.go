@@ -660,3 +660,34 @@ match read_number() {
 		t.Fatalf("expected *MatchExpr, got %T", exprStmt.Expression)
 	}
 }
+
+func TestParseMapIntKeys(t *testing.T) {
+	prog := parse(t, `let m = { 1: "a", 2: "b" };`)
+	if len(prog.Items) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(prog.Items))
+	}
+}
+
+func TestParseMapIdentKeys(t *testing.T) {
+	prog := parse(t, `{ x: 1, y: 2 };`)
+	es := prog.Items[0].(*ExprStmt)
+	m, ok := es.Expression.(*MapLitExpr)
+	if !ok {
+		t.Fatalf("expected *MapLitExpr, got %T", es.Expression)
+	}
+	if len(m.Pairs) != 2 {
+		t.Errorf("expected 2 pairs, got %d", len(m.Pairs))
+	}
+}
+
+func TestParseMapBoolKeys(t *testing.T) {
+	prog := parse(t, `{ true: "yes", false: "no" };`)
+	es := prog.Items[0].(*ExprStmt)
+	m, ok := es.Expression.(*MapLitExpr)
+	if !ok {
+		t.Fatalf("expected *MapLitExpr, got %T", es.Expression)
+	}
+	if len(m.Pairs) != 2 {
+		t.Errorf("expected 2 pairs, got %d", len(m.Pairs))
+	}
+}

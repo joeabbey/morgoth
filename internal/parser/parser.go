@@ -29,6 +29,7 @@ type Parser struct {
 	curToken  token.Token
 	peekToken token.Token
 	errors    []string
+	buffered  []token.Token // tokens buffered by peekAhead, consumed before lexer
 }
 
 // New creates a new Parser for the given lexer.
@@ -50,7 +51,29 @@ func (p *Parser) addError(msg string) {
 
 func (p *Parser) nextToken() {
 	p.curToken = p.peekToken
-	p.peekToken = p.l.NextToken()
+	if len(p.buffered) > 0 {
+		p.peekToken = p.buffered[0]
+		p.buffered = p.buffered[1:]
+	} else {
+		p.peekToken = p.l.NextToken()
+	}
+}
+
+// peekAhead returns the token n positions ahead of curToken (0 = curToken, 1 = peekToken, 2 = next, ...).
+// It buffers tokens from the lexer as needed without advancing curToken or peekToken.
+func (p *Parser) peekAhead(n int) token.Token {
+	if n == 0 {
+		return p.curToken
+	}
+	if n == 1 {
+		return p.peekToken
+	}
+	// n >= 2: need buffered[n-2]
+	idx := n - 2
+	for len(p.buffered) <= idx {
+		p.buffered = append(p.buffered, p.l.NextToken())
+	}
+	return p.buffered[idx]
 }
 
 func (p *Parser) curIs(t token.TokenType) bool  { return p.curToken.Type == t }
@@ -631,21 +654,16 @@ func (p *Parser) parseBlockOrMap() Expr {
 }
 
 // isMapLiteral peeks ahead to decide if { starts a map literal.
-// Map: { STRING : ... } or { IDENT : ... }
+// Map: { STRING : ... } or { IDENT/OK/ERR : ... } or { INT/FLOAT/BOOL/NIL : ... }
 func (p *Parser) isMapLiteral() bool {
 	if p.peekIs(token.STRING) {
 		return true
 	}
-	if p.peekIs(token.IDENT) {
-		// Need to check if the token two ahead is COLON.
-		// Save state, peek, restore.
-		savedCur := p.curToken
-		savedPeek := p.peekToken
-		p.nextToken() // cur = the ident
-		result := p.peekIs(token.COLON)
-		p.curToken = savedCur
-		p.peekToken = savedPeek
-		return result
+	// For all other key types, check if two tokens ahead is COLON.
+	switch p.peekToken.Type {
+	case token.IDENT, token.OK, token.ERR,
+		token.INT, token.FLOAT, token.TRUE, token.FALSE, token.NIL:
+		return p.peekAhead(2).Type == token.COLON
 	}
 	return false
 }
