@@ -668,6 +668,41 @@ speak xs[0]
 	}
 }
 
+func TestReturnAtTopLevel(t *testing.T) {
+	_, _, err := evalSource(t, `return 42;`)
+	if err == nil {
+		t.Fatal("expected error from return at top level")
+	}
+	doomErr, ok := err.(*DoomError)
+	if !ok {
+		t.Fatalf("expected *DoomError, got %T: %v", err, err)
+	}
+	if !strings.Contains(doomErr.Message, "return outside function") {
+		t.Errorf("got %q", doomErr.Message)
+	}
+}
+
+func TestQuestionSemicolonInsertion(t *testing.T) {
+	out, _, err := evalSource(t, "fn get() { ok(42) }\nfn use() {\n  let v = get()?\n  ok(v + 1)\n}\nmatch use() {\n  ok(v) => speak v,\n  err(e) => speak e,\n}\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "43\n" {
+		t.Errorf("got %q, want %q", out, "43\n")
+	}
+}
+
+func TestDecreeSemicolonInsertion(t *testing.T) {
+	// decree should work without explicit ; after a trigger-ending line
+	out, _, err := evalSource(t, "let x = 1\ndecree \"zero_indexed\"\nlet xs = [10, 20, 30]\nspeak xs[0]\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "10\n" {
+		t.Errorf("got %q, want %q", out, "10\n")
+	}
+}
+
 func testExampleFile(t *testing.T, filename, expected string) {
 	t.Helper()
 
