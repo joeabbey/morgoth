@@ -138,6 +138,20 @@ func (ev *Evaluator) evalFnDecl(decl *parser.FnDecl) (*Value, error) {
 	return NilVal(), nil
 }
 
+func (ev *Evaluator) evalFnLitExpr(expr *parser.FnLitExpr) (*Value, error) {
+	params := make([]string, len(expr.Params))
+	for i, p := range expr.Params {
+		params[i] = p.Name
+	}
+	fn := &FnValue{
+		Name:   "<anonymous>",
+		Params: params,
+		Body:   expr.Body,
+		Env:    ev.env,
+	}
+	return FnVal(fn), nil
+}
+
 func (ev *Evaluator) evalLetStmt(stmt *parser.LetStmt) (*Value, error) {
 	val, err := ev.evalExpr(stmt.Value)
 	if err != nil {
@@ -249,6 +263,8 @@ func (ev *Evaluator) evalExpr(expr parser.Expr) (*Value, error) {
 		return ev.evalSorryExpr(n)
 	case *parser.ChantExpr:
 		return ev.evalChantExpr(n)
+	case *parser.FnLitExpr:
+		return ev.evalFnLitExpr(n)
 	case *parser.SpawnExpr:
 		// MVP stub: run spawn body synchronously, return nil.
 		_, err := ev.evalBlockExpr(n.Body)
@@ -505,6 +521,12 @@ func (ev *Evaluator) valuesEqual(a, b *Value) bool {
 		return a.Str == b.Str
 	case ValNil:
 		return true
+	case ValOk:
+		return ev.valuesEqual(a.Inner, b.Inner)
+	case ValErr:
+		return ev.valuesEqual(a.Inner, b.Inner)
+	case ValPtr:
+		return a.Int == b.Int
 	default:
 		return false
 	}

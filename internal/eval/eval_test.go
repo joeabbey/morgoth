@@ -868,3 +868,184 @@ match 99 {
 		t.Fatal("expected doom from exhausted match")
 	}
 }
+
+// --- Anonymous functions ---
+
+func TestAnonymousFnBasic(t *testing.T) {
+	out, _, err := evalSource(t, `
+let double = fn(x) { x * 2 }
+speak double(5)
+`)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out != "10\n" {
+		t.Errorf("got %q, want %q", out, "10\n")
+	}
+}
+
+func TestAnonymousFnNoParams(t *testing.T) {
+	out, _, err := evalSource(t, `
+let greet = fn() { "hello" }
+speak greet()
+`)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out != "hello\n" {
+		t.Errorf("got %q, want %q", out, "hello\n")
+	}
+}
+
+func TestAnonymousFnMultipleParams(t *testing.T) {
+	out, _, err := evalSource(t, `
+let add = fn(a, b) { a + b }
+speak add(3, 7)
+`)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out != "10\n" {
+		t.Errorf("got %q, want %q", out, "10\n")
+	}
+}
+
+// --- Closures ---
+
+func TestClosure(t *testing.T) {
+	out, _, err := evalSource(t, `
+fn make_adder(n) {
+  fn(x) { x + n }
+}
+let add5 = make_adder(5)
+speak add5(10)
+`)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out != "15\n" {
+		t.Errorf("got %q, want %q", out, "15\n")
+	}
+}
+
+func TestClosureOverMutableVar(t *testing.T) {
+	out, _, err := evalSource(t, `
+let count = 0
+let inc = fn() {
+  count = count + 1
+  count
+}
+inc()
+inc()
+speak inc()
+`)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out != "3\n" {
+		t.Errorf("got %q, want %q", out, "3\n")
+	}
+}
+
+// --- Higher-order functions ---
+
+func TestHigherOrderFunction(t *testing.T) {
+	out, _, err := evalSource(t, `
+fn apply(f, x) {
+  f(x)
+}
+let square = fn(n) { n * n }
+speak apply(square, 4)
+`)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out != "16\n" {
+		t.Errorf("got %q, want %q", out, "16\n")
+	}
+}
+
+func TestFnReturningFn(t *testing.T) {
+	out, _, err := evalSource(t, `
+fn multiplier(factor) {
+  fn(x) { x * factor }
+}
+let triple = multiplier(3)
+speak triple(7)
+`)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out != "21\n" {
+		t.Errorf("got %q, want %q", out, "21\n")
+	}
+}
+
+// --- valuesEqual for ok/err ---
+
+func TestValuesEqualOkErr(t *testing.T) {
+	tests := []struct {
+		source string
+		want   string
+	}{
+		{`speak ok(1) == ok(1)`, "true\n"},
+		{`speak ok(1) == ok(2)`, "false\n"},
+		{`speak err("x") == err("x")`, "true\n"},
+		{`speak err("x") == err("y")`, "false\n"},
+		{`speak ok(1) == err(1)`, "false\n"},
+		{`speak ok(1) != ok(2)`, "true\n"},
+	}
+	for _, tt := range tests {
+		out, _, err := evalSource(t, tt.source)
+		if err != nil {
+			t.Errorf("source %q: unexpected error: %v", tt.source, err)
+			continue
+		}
+		if out != tt.want {
+			t.Errorf("source %q: got %q, want %q", tt.source, out, tt.want)
+		}
+	}
+}
+
+// --- if without else ---
+
+func TestIfWithoutElse(t *testing.T) {
+	out, _, err := evalSource(t, `
+if true {
+  speak "yes"
+}
+`)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out != "yes\n" {
+		t.Errorf("got %q, want %q", out, "yes\n")
+	}
+}
+
+func TestIfWithoutElseFalse(t *testing.T) {
+	out, _, err := evalSource(t, `
+if false {
+  speak "nope"
+}
+speak "done"
+`)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out != "done\n" {
+		t.Errorf("got %q, want %q", out, "done\n")
+	}
+}
+
+// --- Immediate fn call ---
+
+func TestImmediateFnCall(t *testing.T) {
+	out, _, err := evalSource(t, `speak fn(x) { x + 1 }(41)`)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out != "42\n" {
+		t.Errorf("got %q, want %q", out, "42\n")
+	}
+}

@@ -153,6 +153,25 @@ func (p *Parser) parseFnDecl() *FnDecl {
 	return decl
 }
 
+func (p *Parser) parseFnLitExpr() Expr {
+	lit := &FnLitExpr{Token: p.curToken}
+	if !p.expectPeek(token.LPAREN) {
+		return nil
+	}
+	lit.Params = p.parseParamList()
+	if !p.curIs(token.RPAREN) {
+		p.addError(fmt.Sprintf("expected ), got %s", p.curToken.Type))
+		return nil
+	}
+	p.nextToken() // move past )
+	body := p.parseBlockExpr()
+	if body == nil {
+		return nil
+	}
+	lit.Body = body
+	return lit
+}
+
 func (p *Parser) parseExternDecl() *ExternDecl {
 	decl := &ExternDecl{Token: p.curToken}
 	if !p.expectPeek(token.FN) {
@@ -394,6 +413,8 @@ func (p *Parser) parsePrefixExpr() Expr {
 		return p.parseDoomExpr()
 	case token.CHANT:
 		return p.parseChantExpr()
+	case token.FN:
+		return p.parseFnLitExpr()
 	case token.SPAWN:
 		return p.parseSpawnExpr()
 	case token.AWAIT_ALL:

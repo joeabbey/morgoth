@@ -691,3 +691,48 @@ func TestParseMapBoolKeys(t *testing.T) {
 		t.Errorf("expected 2 pairs, got %d", len(m.Pairs))
 	}
 }
+
+func TestParseFnLitExpr(t *testing.T) {
+	prog := parse(t, `let f = fn(x) { x + 1 };`)
+	if len(prog.Items) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(prog.Items))
+	}
+	ls, ok := prog.Items[0].(*LetStmt)
+	if !ok {
+		t.Fatalf("expected *LetStmt, got %T", prog.Items[0])
+	}
+	if ls.Name != "f" {
+		t.Errorf("expected name 'f', got %q", ls.Name)
+	}
+	fn, ok := ls.Value.(*FnLitExpr)
+	if !ok {
+		t.Fatalf("expected *FnLitExpr, got %T", ls.Value)
+	}
+	if len(fn.Params) != 1 || fn.Params[0].Name != "x" {
+		t.Errorf("expected params [x], got %v", fn.Params)
+	}
+}
+
+func TestParseFnLitNoParams(t *testing.T) {
+	prog := parse(t, `let f = fn() { 42 };`)
+	ls := prog.Items[0].(*LetStmt)
+	fn, ok := ls.Value.(*FnLitExpr)
+	if !ok {
+		t.Fatalf("expected *FnLitExpr, got %T", ls.Value)
+	}
+	if len(fn.Params) != 0 {
+		t.Errorf("expected 0 params, got %d", len(fn.Params))
+	}
+}
+
+func TestParseFnLitMultipleParams(t *testing.T) {
+	prog := parse(t, `let add = fn(a, b) { a + b };`)
+	ls := prog.Items[0].(*LetStmt)
+	fn, ok := ls.Value.(*FnLitExpr)
+	if !ok {
+		t.Fatalf("expected *FnLitExpr, got %T", ls.Value)
+	}
+	if len(fn.Params) != 2 {
+		t.Errorf("expected 2 params, got %d", len(fn.Params))
+	}
+}

@@ -411,6 +411,16 @@ type ChantExpr struct {
 func (e *ChantExpr) TokenLiteral() string { return e.Token.Literal }
 func (e *ChantExpr) exprNode()            {}
 
+// FnLitExpr represents an anonymous function: fn(params) { body }
+type FnLitExpr struct {
+	Token  token.Token // the FN token
+	Params []Param
+	Body   *BlockExpr
+}
+
+func (e *FnLitExpr) TokenLiteral() string { return e.Token.Literal }
+func (e *FnLitExpr) exprNode()            {}
+
 // SpawnExpr represents: spawn { body }
 type SpawnExpr struct {
 	Token token.Token // the SPAWN token

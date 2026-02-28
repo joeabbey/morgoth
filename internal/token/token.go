@@ -212,6 +212,7 @@ var statementStarters = map[TokenType]bool{
 	GUARD:  true,
 	RETURN: true,
 	DECREE: true,
+	SPAWN:  true,
 }
 
 func StartsStatement(t TokenType) bool {
