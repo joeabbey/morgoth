@@ -1,0 +1,25 @@
+version: 1
+languages: [go]
+block_on: error
+
+analyzers:
+  imports: true
+  consistency: true
+  references: true
+  tests: true
+  patterns: true
+  security: true
+  hallucination: true
+  complexity: true
+  concurrency: true
+  resource: true
+  error_handling: true
+  dead_code: true
+
+llm:
+  enabled: true
+
+ignore:
+  - "build/"
+  - "dist/"
+  - "testdata/"
