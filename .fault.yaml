@@ -18,6 +18,7 @@ analyzers:
 
 llm:
   enabled: true
+  spec_file: "docs/SPEC.md"
 
 ignore:
   - "build/"
