@@ -122,6 +122,8 @@ func (p *Parser) parseItem() Item {
 		return p.parseReturnStmt()
 	case token.DECREE:
 		return p.parseDecreeStmt()
+	case token.SIGIL:
+		return p.parseSigilDecl()
 	default:
 		return p.parseExprStmt()
 	}
@@ -427,6 +429,10 @@ func (p *Parser) parsePrefixExpr() Expr {
 		return p.parseSpawnExpr()
 	case token.AWAIT_ALL:
 		return p.parseAwaitAllExpr()
+	case token.INVOKE:
+		return p.parseInvokeExpr()
+	case token.ALIGN:
+		return p.parseAlignExpr()
 	default:
 		p.addError(fmt.Sprintf("unexpected token %s (%q)", p.curToken.Type, p.curToken.Literal))
 		return nil
@@ -1034,4 +1040,127 @@ func (p *Parser) parseAwaitAllExpr() Expr {
 		p.nextToken() // move past await_all keyword
 	}
 	return &AwaitAllExpr{Token: tok}
+}
+
+// spec:SEC-6-4
+func (p *Parser) parseSigilDecl() *SigilDecl {
+	decl := &SigilDecl{Token: p.curToken}
+	if !p.expectPeek(token.IDENT) {
+		return nil
+	}
+	decl.Name = p.curToken.Literal
+	if !p.expectPeek(token.LPAREN) {
+		return nil
+	}
+	decl.Params = p.parseParamList()
+	if !p.curIs(token.RPAREN) {
+		p.addError(fmt.Sprintf("expected ), got %s", p.curToken.Type))
+		return nil
+	}
+	p.nextToken() // move past )
+	body := p.parseBlockExpr()
+	if body == nil {
+		return nil
+	}
+	decl.Body = body
+	return decl
+}
+
+func (p *Parser) parseInvokeExpr() Expr {
+	tok := p.curToken
+	p.nextToken() // move past invoke
+	if !p.curIs(token.IDENT) {
+		p.addError(fmt.Sprintf("expected identifier after invoke, got %s", p.curToken.Type))
+		return nil
+	}
+	name := p.curToken.Literal
+	p.nextToken() // move past name
+	if !p.curIs(token.LPAREN) {
+		p.addError(fmt.Sprintf("expected ( after invoke %s, got %s", name, p.curToken.Type))
+		return nil
+	}
+	args := p.parseExprList(token.RPAREN)
+	return &InvokeExpr{Token: tok, Name: name, Args: args}
+}
+
+// spec:SEC-6-3
+func (p *Parser) parseAlignExpr() Expr {
+	node := &AlignExpr{Token: p.curToken}
+
+	if !p.expectPeek(token.LBRACE) {
+		return nil
+	}
+
+	// Enable align mode on the lexer so tabs and newlines become tokens.
+	// The current peekToken was fetched before align mode, but it correctly
+	// represents the first real token inside the align block (since the lexer
+	// in normal mode already skipped whitespace). We enable align mode now
+	// so all subsequent NextToken() calls emit TAB/NEWLINE.
+	p.l.SetAlignMode(true)
+	p.nextToken() // move past { into align content
+
+	var rows [][]Expr
+	var currentRow []Expr
+
+	// Skip leading newlines
+	for p.curIs(token.NEWLINE) {
+		p.nextToken()
+	}
+
+	for !p.curIs(token.RBRACE) && !p.curIs(token.EOF) {
+		// Skip leading tabs at the start of a row (indentation).
+		if len(currentRow) == 0 {
+			for p.curIs(token.TAB) {
+				p.nextToken()
+			}
+			// After skipping indentation, check again for RBRACE/EOF/NEWLINE.
+			if p.curIs(token.RBRACE) || p.curIs(token.EOF) {
+				break
+			}
+			if p.curIs(token.NEWLINE) {
+				p.nextToken()
+				continue
+			}
+		}
+
+		// Parse one expression
+		expr := p.parseExpression(precLowest)
+		if expr != nil {
+			currentRow = append(currentRow, expr)
+		}
+
+		if p.curIs(token.TAB) {
+			p.nextToken() // skip tab, continue same row
+		} else if p.curIs(token.NEWLINE) {
+			if len(currentRow) > 0 {
+				rows = append(rows, currentRow)
+				currentRow = nil
+			}
+			p.nextToken()
+			// Skip empty lines
+			for p.curIs(token.NEWLINE) {
+				p.nextToken()
+			}
+		} else if p.curIs(token.RBRACE) {
+			// End of align block
+			if len(currentRow) > 0 {
+				rows = append(rows, currentRow)
+				currentRow = nil
+			}
+		}
+	}
+
+	// If there's a trailing row without newline
+	if len(currentRow) > 0 {
+		rows = append(rows, currentRow)
+	}
+
+	p.l.SetAlignMode(false)
+	node.Rows = rows
+	// Re-fetch peekToken: it was obtained in align mode and may be a
+	// TAB/NEWLINE token that doesn't exist in normal mode.
+	p.buffered = nil
+	p.peekToken = p.l.NextToken()
+	p.nextToken() // move past }
+	return node
 }

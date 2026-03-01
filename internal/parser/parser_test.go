@@ -736,3 +736,121 @@ func TestParseFnLitMultipleParams(t *testing.T) {
 		t.Errorf("expected 2 params, got %d", len(fn.Params))
 	}
 }
+
+func TestSigilDecl(t *testing.T) {
+	prog := parse(t, `sigil greet(name) { speak name }`)
+	if len(prog.Items) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(prog.Items))
+	}
+	sigil, ok := prog.Items[0].(*SigilDecl)
+	if !ok {
+		t.Fatalf("expected *SigilDecl, got %T", prog.Items[0])
+	}
+	if sigil.Name != "greet" {
+		t.Errorf("expected name greet, got %s", sigil.Name)
+	}
+	if len(sigil.Params) != 1 {
+		t.Fatalf("expected 1 param, got %d", len(sigil.Params))
+	}
+	if sigil.Params[0].Name != "name" {
+		t.Errorf("expected param name, got %s", sigil.Params[0].Name)
+	}
+	if sigil.Body == nil {
+		t.Fatal("expected body")
+	}
+}
+
+func TestSigilDeclNoParams(t *testing.T) {
+	prog := parse(t, `sigil noop() { nil }`)
+	sigil, ok := prog.Items[0].(*SigilDecl)
+	if !ok {
+		t.Fatalf("expected *SigilDecl, got %T", prog.Items[0])
+	}
+	if sigil.Name != "noop" {
+		t.Errorf("expected name noop, got %s", sigil.Name)
+	}
+	if len(sigil.Params) != 0 {
+		t.Errorf("expected 0 params, got %d", len(sigil.Params))
+	}
+}
+
+func TestInvokeExpr(t *testing.T) {
+	prog := parse(t, `invoke greet("world");`)
+	es := prog.Items[0].(*ExprStmt)
+	inv, ok := es.Expression.(*InvokeExpr)
+	if !ok {
+		t.Fatalf("expected *InvokeExpr, got %T", es.Expression)
+	}
+	if inv.Name != "greet" {
+		t.Errorf("expected name greet, got %s", inv.Name)
+	}
+	if len(inv.Args) != 1 {
+		t.Fatalf("expected 1 arg, got %d", len(inv.Args))
+	}
+}
+
+func TestInvokeExprNoArgs(t *testing.T) {
+	prog := parse(t, `invoke noop();`)
+	es := prog.Items[0].(*ExprStmt)
+	inv, ok := es.Expression.(*InvokeExpr)
+	if !ok {
+		t.Fatalf("expected *InvokeExpr, got %T", es.Expression)
+	}
+	if inv.Name != "noop" {
+		t.Errorf("expected name noop, got %s", inv.Name)
+	}
+	if len(inv.Args) != 0 {
+		t.Errorf("expected 0 args, got %d", len(inv.Args))
+	}
+}
+
+func TestAlignExpr(t *testing.T) {
+	input := "let t = align {\n\t1\t2\t3\n\t4\t5\t6\n}"
+	prog := parse(t, input)
+	if len(prog.Items) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(prog.Items))
+	}
+	ls, ok := prog.Items[0].(*LetStmt)
+	if !ok {
+		t.Fatalf("expected *LetStmt, got %T", prog.Items[0])
+	}
+	ae, ok := ls.Value.(*AlignExpr)
+	if !ok {
+		t.Fatalf("expected *AlignExpr, got %T", ls.Value)
+	}
+	if len(ae.Rows) != 2 {
+		t.Fatalf("expected 2 rows, got %d", len(ae.Rows))
+	}
+	if len(ae.Rows[0]) != 3 {
+		t.Errorf("expected 3 cols in row 0, got %d", len(ae.Rows[0]))
+	}
+	if len(ae.Rows[1]) != 3 {
+		t.Errorf("expected 3 cols in row 1, got %d", len(ae.Rows[1]))
+	}
+}
+
+func TestAlignExprEmpty(t *testing.T) {
+	input := "let t = align {\n}"
+	prog := parse(t, input)
+	ls := prog.Items[0].(*LetStmt)
+	ae, ok := ls.Value.(*AlignExpr)
+	if !ok {
+		t.Fatalf("expected *AlignExpr, got %T", ls.Value)
+	}
+	if len(ae.Rows) != 0 {
+		t.Errorf("expected 0 rows, got %d", len(ae.Rows))
+	}
+}
+
+func TestAlignExprFollowedByCode(t *testing.T) {
+	// Ensure parsing works correctly after align block
+	input := "let t = align {\n\t1\t2\n}\nspeak t"
+	prog := parse(t, input)
+	if len(prog.Items) != 2 {
+		t.Fatalf("expected 2 items, got %d", len(prog.Items))
+	}
+	_, ok := prog.Items[1].(*ExprStmt)
+	if !ok {
+		t.Fatalf("expected *ExprStmt after align, got %T", prog.Items[1])
+	}
+}

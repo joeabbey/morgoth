@@ -41,11 +41,19 @@ type GuardReturnSignal struct {
 
 func (e *GuardReturnSignal) Error() string { return "guard return" }
 
+// SigilDef stores a sigil macro definition for later invocation.
+type SigilDef struct {
+	Name   string
+	Params []string
+	Body   *parser.BlockExpr
+}
+
 // Evaluator walks the AST and produces values.
 type Evaluator struct {
 	env     *Env
 	decrees *DecreeConfig
 	output  io.Writer
+	sigils  map[string]*SigilDef
 }
 
 // New creates a new Evaluator with default settings.
@@ -54,6 +62,7 @@ func New() *Evaluator {
 		env:     NewEnv(nil),
 		decrees: NewDecreeConfig(),
 		output:  os.Stdout,
+		sigils:  make(map[string]*SigilDef),
 	}
 }
 
@@ -114,6 +123,17 @@ func (ev *Evaluator) evalItem(item parser.Item) (*Value, error) {
 		return ev.evalReturnStmt(n)
 	case *parser.DecreeStmt:
 		return ev.evalDecreeStmt(n)
+	case *parser.SigilDecl:
+		params := make([]string, len(n.Params))
+		for i, p := range n.Params {
+			params[i] = p.Name
+		}
+		ev.sigils[n.Name] = &SigilDef{
+			Name:   n.Name,
+			Params: params,
+			Body:   n.Body,
+		}
+		return NilVal(), nil
 	case *parser.ExprStmt:
 		return ev.evalExpr(n.Expression)
 	default:
@@ -276,9 +296,40 @@ func (ev *Evaluator) evalExpr(expr parser.Expr) (*Value, error) {
 	case *parser.AwaitAllExpr:
 		// MVP stub: no-op since spawn runs synchronously.
 		return NilVal(), nil
+	case *parser.InvokeExpr:
+		return ev.evalInvokeExpr(n)
+	case *parser.AlignExpr:
+		return ev.evalAlignExpr(n)
 	default:
 		return nil, &DoomError{Message: fmt.Sprintf("unknown expr type: %T", expr)}
 	}
+}
+
+// spec:SEC-6-3
+func (ev *Evaluator) evalAlignExpr(node *parser.AlignExpr) (*Value, error) {
+	if len(node.Rows) == 0 {
+		return ArrayVal(nil), nil
+	}
+
+	expectedCols := len(node.Rows[0])
+	var rows []*Value
+
+	for _, row := range node.Rows {
+		if len(row) != expectedCols {
+			return nil, &DoomError{Message: "misaligned table"}
+		}
+		var cells []*Value
+		for _, expr := range row {
+			val, err := ev.evalExpr(expr)
+			if err != nil {
+				return nil, err
+			}
+			cells = append(cells, val)
+		}
+		rows = append(rows, ArrayVal(cells))
+	}
+
+	return ArrayVal(rows), nil
 }
 
 func (ev *Evaluator) evalIdentExpr(expr *parser.IdentExpr) (*Value, error) {
@@ -1146,4 +1197,55 @@ func (ev *Evaluator) evalChantExpr(expr *parser.ChantExpr) (*Value, error) {
 		return nil, err
 	}
 	return OkVal(NilVal()), nil
+}
+
+// spec:SEC-6-4
+func (ev *Evaluator) evalInvokeExpr(node *parser.InvokeExpr) (*Value, error) {
+	sigil, ok := ev.sigils[node.Name]
+	if !ok {
+		return nil, &DoomError{Message: "unknown sigil: " + node.Name}
+	}
+
+	// Evaluate args eagerly in current env
+	args := make([]*Value, len(node.Args))
+	for i, arg := range node.Args {
+		val, err := ev.evalExpr(arg)
+		if err != nil {
+			return nil, err
+		}
+		args[i] = val
+	}
+
+	// Create child env from CALLER's env (dynamic scoping!)
+	childEnv := NewEnv(ev.env)
+	for i, param := range sigil.Params {
+		if i < len(args) {
+			childEnv.Define(param, args[i], false)
+		} else {
+			childEnv.Define(param, NilVal(), false)
+		}
+	}
+
+	oldEnv := ev.env
+	ev.env = childEnv
+	result, err := ev.evalBlockExpr(sigil.Body)
+	ev.env = oldEnv
+
+	if err != nil {
+		if ret, ok := err.(*ReturnSignal); ok {
+			return ret.Value, nil
+		}
+		if gret, ok := err.(*GuardReturnSignal); ok {
+			return gret.Value, nil
+		}
+		if prop, ok := err.(*PropagateError); ok {
+			return ErrVal(prop.Value), nil
+		}
+		return nil, err
+	}
+
+	if result == nil {
+		return NilVal(), nil
+	}
+	return result, nil
 }

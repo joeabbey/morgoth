@@ -1,0 +1,7 @@
+decree "zero_indexed"
+let table = align {
+	"Alice"	30	"NYC"
+	"Bob"	25	"LA"
+}
+speak table[0][0] else doom("speak failed")
+speak table[1][2] else doom("speak failed")

@@ -20,6 +20,11 @@ type Lexer struct {
 	// pendingSemicolon is set when we detect a newline boundary requiring
 	// semicolon insertion; it will be emitted before the next real token.
 	pendingSemicolon *token.Token
+
+	// alignMode is true when parsing inside an align { ... } block.
+	// In this mode, tabs and newlines are emitted as TAB/NEWLINE tokens
+	// instead of being skipped as whitespace, and semicolon insertion is disabled.
+	alignMode bool
 }
 
 // New creates a new Lexer for the given input string.
@@ -35,6 +40,13 @@ func New(input string) *Lexer {
 	}
 	l.readChar()
 	return l
+}
+
+// SetAlignMode enables or disables align mode. In align mode, tabs and
+// newlines are emitted as explicit TAB/NEWLINE tokens instead of being
+// treated as whitespace.
+func (l *Lexer) SetAlignMode(mode bool) {
+	l.alignMode = mode
 }
 
 func (l *Lexer) readChar() {
@@ -71,8 +83,16 @@ func (l *Lexer) skipWhitespaceAndComments() bool {
 	sawNewline := false
 	for {
 		switch {
-		case l.ch == ' ' || l.ch == '\t' || l.ch == '\r':
+		case l.ch == ' ' || l.ch == '\r':
 			l.readChar()
+		case (l.ch == '\t') && !l.alignMode:
+			l.readChar()
+		case l.ch == '\t' && l.alignMode:
+			// In align mode, don't skip tabs — they become TAB tokens
+			return sawNewline
+		case l.ch == '\n' && l.alignMode:
+			// In align mode, don't skip newlines — they become NEWLINE tokens
+			return sawNewline
 		case l.ch == '\n':
 			sawNewline = true
 			l.line++
@@ -129,6 +149,30 @@ func (l *Lexer) skipBlockComment() {
 
 // NextToken returns the next token from the input. spec:SEC-1-2 spec:SEC-2-4
 func (l *Lexer) NextToken() token.Token {
+	// In align mode, skip semicolon insertion entirely.
+	if l.alignMode {
+		l.skipWhitespaceAndComments()
+
+		// Emit TAB and NEWLINE as explicit tokens in align mode.
+		if l.ch == '\t' {
+			tok := l.makeToken(token.TAB, "\t")
+			l.readChar()
+			l.lastToken = tok
+			return tok
+		}
+		if l.ch == '\n' {
+			tok := l.makeToken(token.NEWLINE, "\n")
+			l.line++
+			l.col = 0
+			l.readChar()
+			l.lastToken = tok
+			return tok
+		}
+
+		// Fall through to normal token handling below (skipping semicolon logic).
+		goto tokenSwitch
+	}
+
 	// If we have a pending semicolon from newline insertion, emit it first.
 	if l.pendingSemicolon != nil {
 		tok := *l.pendingSemicolon
@@ -137,6 +181,7 @@ func (l *Lexer) NextToken() token.Token {
 		return tok
 	}
 
+	{
 	sawNewline := l.skipWhitespaceAndComments()
 
 	// Check for semicolon insertion:
@@ -156,7 +201,9 @@ func (l *Lexer) NextToken() token.Token {
 			return l.NextToken()
 		}
 	}
+	}
 
+tokenSwitch:
 	var tok token.Token
 	tok.Line = l.line
 	tok.Col = l.col

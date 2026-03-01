@@ -1,0 +1,15 @@
+# Sigils use dynamic scoping (caller's scope, not definition scope)
+let x = 10
+sigil show_x() {
+  speak x else doom("speak failed")
+}
+
+# Direct invocation uses the current scope
+invoke show_x()
+
+# Inside a function, the sigil sees the function's scope
+fn wrapper() {
+  let x = 99
+  invoke show_x()
+}
+wrapper()

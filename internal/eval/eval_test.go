@@ -1202,3 +1202,105 @@ speak err
 		t.Errorf("got %q, want %q", out, "also works\n")
 	}
 }
+
+// --- Sigil / Invoke ---
+
+func TestSigilBasic(t *testing.T) {
+	out, _, err := evalSource(t, `
+sigil greet(name) {
+  speak "hello " + name
+}
+invoke greet("world")
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "hello world\n" {
+		t.Errorf("got %q, want %q", out, "hello world\n")
+	}
+}
+
+func TestSigilDynamicScoping(t *testing.T) {
+	out, _, err := evalSource(t, `
+let x = 10
+sigil show_x() {
+  speak x else doom("speak failed")
+}
+invoke show_x()
+fn wrapper() {
+  let x = 99
+  invoke show_x()
+}
+wrapper()
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "10\n99\n" {
+		t.Errorf("got %q, want %q", out, "10\n99\n")
+	}
+}
+
+func TestInvokeUnknownSigil(t *testing.T) {
+	_, _, err := evalSource(t, `invoke missing()`)
+	if err == nil {
+		t.Fatal("expected doom error for unknown sigil")
+	}
+	doomErr, ok := err.(*DoomError)
+	if !ok {
+		t.Fatalf("expected *DoomError, got %T: %v", err, err)
+	}
+	if doomErr.Message != "unknown sigil: missing" {
+		t.Errorf("got %q, want %q", doomErr.Message, "unknown sigil: missing")
+	}
+}
+
+func TestExampleMacros(t *testing.T) { testExampleFile(t, "macros.mor") }
+
+// --- Align ---
+
+func TestAlignBasic(t *testing.T) {
+	out, _, err := evalSource(t, "decree \"zero_indexed\"\nlet table = align {\n\t\"Alice\"\t30\t\"NYC\"\n\t\"Bob\"\t25\t\"LA\"\n}\nspeak table[0][0] else doom(\"speak failed\")\nspeak table[1][2] else doom(\"speak failed\")\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "Alice\nLA\n" {
+		t.Errorf("got %q, want %q", out, "Alice\nLA\n")
+	}
+}
+
+func TestAlignMisaligned(t *testing.T) {
+	_, _, err := evalSource(t, "let t = align {\n\t1\t2\t3\n\t4\t5\n}\n")
+	if err == nil {
+		t.Fatal("expected doom error for misaligned table")
+	}
+	doomErr, ok := err.(*DoomError)
+	if !ok {
+		t.Fatalf("expected *DoomError, got %T: %v", err, err)
+	}
+	if doomErr.Message != "misaligned table" {
+		t.Errorf("got %q, want %q", doomErr.Message, "misaligned table")
+	}
+}
+
+func TestAlignEmpty(t *testing.T) {
+	out, _, err := evalSource(t, "let t = align {\n}\nspeak t\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "[]\n" {
+		t.Errorf("got %q, want %q", out, "[]\n")
+	}
+}
+
+func TestAlignSingleRow(t *testing.T) {
+	out, _, err := evalSource(t, "decree \"zero_indexed\"\nlet t = align {\n\t1\t2\t3\n}\nspeak t[0][1]\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "2\n" {
+		t.Errorf("got %q, want %q", out, "2\n")
+	}
+}
+
+func TestExampleAlign(t *testing.T) { testExampleFile(t, "align.mor") }

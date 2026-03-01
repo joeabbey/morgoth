@@ -488,6 +488,63 @@ func TestCRLFLineEndings(t *testing.T) {
 	}
 }
 
+func TestAlignMode(t *testing.T) {
+	// Test that in align mode, tabs and newlines become explicit tokens.
+	input := "a\tb\nc"
+	l := New(input)
+	l.SetAlignMode(true)
+
+	tok := l.NextToken() // a
+	if tok.Type != token.IDENT || tok.Literal != "a" {
+		t.Fatalf("expected IDENT 'a', got %s %q", tok.Type, tok.Literal)
+	}
+	tok = l.NextToken() // \t
+	if tok.Type != token.TAB {
+		t.Fatalf("expected TAB, got %s %q", tok.Type, tok.Literal)
+	}
+	tok = l.NextToken() // b
+	if tok.Type != token.IDENT || tok.Literal != "b" {
+		t.Fatalf("expected IDENT 'b', got %s %q", tok.Type, tok.Literal)
+	}
+	tok = l.NextToken() // \n
+	if tok.Type != token.NEWLINE {
+		t.Fatalf("expected NEWLINE, got %s %q", tok.Type, tok.Literal)
+	}
+	tok = l.NextToken() // c
+	if tok.Type != token.IDENT || tok.Literal != "c" {
+		t.Fatalf("expected IDENT 'c', got %s %q", tok.Type, tok.Literal)
+	}
+}
+
+func TestAlignModeNoSemicolon(t *testing.T) {
+	// In align mode, semicolons should not be inserted.
+	input := "x\ny"
+	l := New(input)
+	l.SetAlignMode(true)
+
+	tok := l.NextToken() // x
+	if tok.Type != token.IDENT {
+		t.Fatalf("expected IDENT, got %s", tok.Type)
+	}
+	tok = l.NextToken() // \n (not SEMICOLON)
+	if tok.Type != token.NEWLINE {
+		t.Fatalf("expected NEWLINE (not SEMICOLON), got %s", tok.Type)
+	}
+	tok = l.NextToken() // y
+	if tok.Type != token.IDENT {
+		t.Fatalf("expected IDENT, got %s", tok.Type)
+	}
+}
+
+func TestAlignKeyword(t *testing.T) {
+	input := "align"
+	l := New(input)
+	tok := l.NextToken()
+	if tok.Type != token.ALIGN {
+		t.Fatalf("expected ALIGN, got %s %q", tok.Type, tok.Literal)
+	}
+}
+
 func tokenTypes(tokens []token.Token) []string {
 	out := make([]string, len(tokens))
 	for i, t := range tokens {

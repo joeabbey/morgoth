@@ -98,8 +98,47 @@ func TestSemicolonTrigger(t *testing.T) {
 	}
 }
 
+func TestSigilInvokeKeywords(t *testing.T) {
+	if got := LookupIdent("sigil"); got != SIGIL {
+		t.Errorf("LookupIdent(\"sigil\") = %v, want SIGIL", got)
+	}
+	if got := LookupIdent("invoke"); got != INVOKE {
+		t.Errorf("LookupIdent(\"invoke\") = %v, want INVOKE", got)
+	}
+	if SIGIL.String() != "SIGIL" {
+		t.Errorf("SIGIL.String() = %q, want %q", SIGIL.String(), "SIGIL")
+	}
+	if INVOKE.String() != "INVOKE" {
+		t.Errorf("INVOKE.String() = %q, want %q", INVOKE.String(), "INVOKE")
+	}
+	if !StartsStatement(SIGIL) {
+		t.Error("StartsStatement(SIGIL) = false, want true")
+	}
+	if !StartsStatement(INVOKE) {
+		t.Error("StartsStatement(INVOKE) = false, want true")
+	}
+}
+
+func TestAlignToken(t *testing.T) {
+	if got := LookupIdent("align"); got != ALIGN {
+		t.Errorf("LookupIdent(\"align\") = %v, want ALIGN", got)
+	}
+	if ALIGN.String() != "ALIGN" {
+		t.Errorf("ALIGN.String() = %q, want %q", ALIGN.String(), "ALIGN")
+	}
+	if TAB.String() != "TAB" {
+		t.Errorf("TAB.String() = %q, want %q", TAB.String(), "TAB")
+	}
+	if NEWLINE.String() != "NEWLINE" {
+		t.Errorf("NEWLINE.String() = %q, want %q", NEWLINE.String(), "NEWLINE")
+	}
+	if !StartsStatement(ALIGN) {
+		t.Error("StartsStatement(ALIGN) = false, want true")
+	}
+}
+
 func TestStartsStatement(t *testing.T) {
-	starters := []TokenType{LET, CONST, FN, MATCH, IF, GUARD, RETURN, DECREE, SPAWN, SPEAK, DOOM, SORRY, CHANT}
+	starters := []TokenType{LET, CONST, FN, MATCH, IF, GUARD, RETURN, DECREE, SPAWN, SPEAK, DOOM, SORRY, CHANT, SIGIL, INVOKE, ALIGN}
 	for _, tt := range starters {
 		if !StartsStatement(tt) {
 			t.Errorf("StartsStatement(%v) = false, want true", tt)

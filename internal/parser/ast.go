@@ -421,6 +421,15 @@ type FnLitExpr struct {
 func (e *FnLitExpr) TokenLiteral() string { return e.Token.Literal }
 func (e *FnLitExpr) exprNode()            {}
 
+// AlignExpr represents: align { row1col1 \t row1col2 \n row2col1 \t row2col2 }
+type AlignExpr struct {
+	Token token.Token // the ALIGN token
+	Rows  [][]Expr
+}
+
+func (e *AlignExpr) TokenLiteral() string { return e.Token.Literal }
+func (e *AlignExpr) exprNode()            {}
+
 // SpawnExpr represents: spawn { body }
 type SpawnExpr struct {
 	Token token.Token // the SPAWN token
@@ -437,6 +446,27 @@ type AwaitAllExpr struct {
 
 func (e *AwaitAllExpr) TokenLiteral() string { return e.Token.Literal }
 func (e *AwaitAllExpr) exprNode()            {}
+
+// SigilDecl represents a sigil macro declaration: sigil name(params) { body }
+type SigilDecl struct {
+	Token  token.Token // the SIGIL token
+	Name   string
+	Params []Param
+	Body   *BlockExpr
+}
+
+func (d *SigilDecl) TokenLiteral() string { return d.Token.Literal }
+func (d *SigilDecl) itemNode()            {}
+
+// InvokeExpr represents: invoke name(args...)
+type InvokeExpr struct {
+	Token token.Token // the INVOKE token
+	Name  string
+	Args  []Expr
+}
+
+func (e *InvokeExpr) TokenLiteral() string { return e.Token.Literal }
+func (e *InvokeExpr) exprNode()            {}
 
 // --- Patterns ---
 

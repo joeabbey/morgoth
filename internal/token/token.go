@@ -40,6 +40,9 @@ const (
 	AND
 	OR
 	AS
+	ALIGN
+	SIGIL
+	INVOKE
 
 	// Operators
 	PLUS      // +
@@ -74,6 +77,8 @@ const (
 
 	// Special
 	EOF
+	TAB
+	NEWLINE
 	ILLEGAL
 )
 
@@ -107,6 +112,9 @@ var tokenNames = map[TokenType]string{
 	AND:       "AND",
 	OR:        "OR",
 	AS:        "AS",
+	ALIGN:     "ALIGN",
+	SIGIL:     "SIGIL",
+	INVOKE:    "INVOKE",
 	PLUS:      "PLUS",
 	MINUS:     "MINUS",
 	STAR:      "STAR",
@@ -135,6 +143,8 @@ var tokenNames = map[TokenType]string{
 	DOT:       "DOT",
 	QUESTION:  "QUESTION",
 	EOF:       "EOF",
+	TAB:       "TAB",
+	NEWLINE:   "NEWLINE",
 	ILLEGAL:   "ILLEGAL",
 }
 
@@ -180,6 +190,9 @@ var keywords = map[string]TokenType{
 	"and":       AND,
 	"or":        OR,
 	"as":        AS,
+	"align":     ALIGN,
+	"sigil":     SIGIL,
+	"invoke":    INVOKE,
 }
 
 // LookupIdent returns the TokenType for a given identifier string.
@@ -218,6 +231,9 @@ var statementStarters = map[TokenType]bool{
 	DOOM:   true,
 	SORRY:  true,
 	CHANT:  true,
+	ALIGN:  true,
+	SIGIL:  true,
+	INVOKE: true,
 }
 
 func StartsStatement(t TokenType) bool {
