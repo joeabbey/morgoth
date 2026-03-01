@@ -7,7 +7,7 @@ import (
 
 // callBuiltin dispatches to built-in functions that are invoked via CallExpr
 // (as opposed to speak/doom/sorry/chant which are special AST nodes).
-// Returns (result, true) if name is a builtin, or (nil, false) otherwise.
+// Returns (result, true) if name is a builtin, or (nil, false) otherwise. spec:SEC-5
 func (ev *Evaluator) callBuiltin(name string, args []*Value) (*Value, bool, error) {
 	switch name {
 	case "len":

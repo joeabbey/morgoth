@@ -153,6 +153,7 @@ type Token struct {
 	Col     int
 }
 
+// spec:SEC-1-2
 var keywords = map[string]TokenType{
 	"let":       LET,
 	"const":     CONST,
@@ -192,7 +193,7 @@ func LookupIdent(ident string) TokenType {
 }
 
 // SemicolonTrigger returns true if a token of this type at the end of a line
-// can trigger automatic semicolon insertion.
+// can trigger automatic semicolon insertion. spec:SEC-2-4
 func SemicolonTrigger(t TokenType) bool {
 	switch t {
 	case INT, FLOAT, STRING, IDENT, TRUE, FALSE, NIL, RPAREN, RBRACKET, RBRACE, QUESTION, OK, ERR:
@@ -202,7 +203,7 @@ func SemicolonTrigger(t TokenType) bool {
 }
 
 // StartsStatement returns true if this token type is one of the keywords
-// that can begin a new statement (used for semicolon insertion).
+// that can begin a new statement (used for semicolon insertion). spec:SEC-2-4
 var statementStarters = map[TokenType]bool{
 	LET:    true,
 	CONST:  true,

@@ -6,7 +6,7 @@ import (
 	"github.com/joeabbey/morgoth/internal/token"
 )
 
-// Lexer scans Morgoth source code into tokens.
+// Lexer scans Morgoth source code into tokens. spec:SEC-1
 type Lexer struct {
 	input   string
 	pos     int  // current position in input (points to current char)
@@ -23,6 +23,7 @@ type Lexer struct {
 }
 
 // New creates a new Lexer for the given input string.
+// spec:SEC-1-1
 func New(input string) *Lexer {
 	l := &Lexer{
 		input: input,
@@ -65,6 +66,7 @@ func (l *Lexer) peekCharAt(offset int) byte {
 // skipWhitespaceAndComments skips whitespace (spaces, tabs, \r) and comments.
 // It does NOT skip newlines — those are significant for semicolon insertion.
 // Returns true if a newline was crossed.
+// spec:SEC-1-4
 func (l *Lexer) skipWhitespaceAndComments() bool {
 	sawNewline := false
 	for {
@@ -88,12 +90,14 @@ func (l *Lexer) skipWhitespaceAndComments() bool {
 	}
 }
 
+// spec:SEC-1-3
 func (l *Lexer) skipLineComment() {
 	for l.ch != '\n' && l.ch != 0 {
 		l.readChar()
 	}
 }
 
+// spec:SEC-1-3
 func (l *Lexer) skipBlockComment() {
 	// consume the '#{'
 	l.readChar() // skip '#'
@@ -123,7 +127,7 @@ func (l *Lexer) skipBlockComment() {
 	}
 }
 
-// NextToken returns the next token from the input.
+// NextToken returns the next token from the input. spec:SEC-1-2 spec:SEC-2-4
 func (l *Lexer) NextToken() token.Token {
 	// If we have a pending semicolon from newline insertion, emit it first.
 	if l.pendingSemicolon != nil {
@@ -338,6 +342,7 @@ func (l *Lexer) makeToken(tt token.TokenType, literal string) token.Token {
 	}
 }
 
+// spec:SEC-3-2
 func (l *Lexer) readString() (string, bool) {
 	var sb strings.Builder
 	l.readChar() // skip opening quote
@@ -377,6 +382,7 @@ func (l *Lexer) readString() (string, bool) {
 	return sb.String(), false
 }
 
+// spec:SEC-3-2
 func (l *Lexer) readNumber() (token.TokenType, string) {
 	start := l.pos
 	isFloat := false

@@ -89,7 +89,7 @@ func (p *Parser) expectPeek(t token.TokenType) bool {
 	return false
 }
 
-// Parse parses the entire program and returns the AST.
+// Parse parses the entire program and returns the AST. spec:SEC-2-1
 func (p *Parser) Parse() *Program {
 	prog := &Program{}
 	for !p.curIs(token.EOF) {
@@ -129,6 +129,7 @@ func (p *Parser) parseItem() Item {
 
 // --- Declarations ---
 
+// spec:SEC-2-2
 func (p *Parser) parseFnDecl() *FnDecl {
 	decl := &FnDecl{Token: p.curToken}
 	if !p.expectPeek(token.IDENT) {
@@ -172,6 +173,7 @@ func (p *Parser) parseFnLitExpr() Expr {
 	return lit
 }
 
+// spec:SEC-2-2
 func (p *Parser) parseExternDecl() *ExternDecl {
 	decl := &ExternDecl{Token: p.curToken}
 	if !p.expectPeek(token.FN) {
@@ -243,6 +245,7 @@ func (p *Parser) parseStmt() Stmt {
 	}
 }
 
+// spec:SEC-2-3
 func (p *Parser) parseLetStmt() *LetStmt {
 	stmt := &LetStmt{Token: p.curToken}
 	p.nextToken() // move past let
@@ -268,6 +271,7 @@ func (p *Parser) parseLetStmt() *LetStmt {
 	return stmt
 }
 
+// spec:SEC-2-3
 func (p *Parser) parseConstStmt() *ConstStmt {
 	stmt := &ConstStmt{Token: p.curToken}
 	p.nextToken() // move past const
@@ -376,6 +380,7 @@ func tokenPrecedence(t token.TokenType) int {
 	}
 }
 
+// spec:SEC-3
 func (p *Parser) parsePrefixExpr() Expr {
 	switch p.curToken.Type {
 	case token.INT:
@@ -455,6 +460,7 @@ func (p *Parser) parseInfixExpr(left Expr) Expr {
 // --- Infix parsers ---
 // curToken is on the operator when these are called.
 
+// spec:SEC-3-1
 func (p *Parser) parseBinaryExpr(left Expr) Expr {
 	prec := p.curPrecedence()
 	expr := &BinaryExpr{
@@ -720,6 +726,7 @@ func (p *Parser) parseMapLitExpr() Expr {
 
 // parseBlockExpr parses { stmts... [finalExpr] }.
 // curToken must be on {. Returns with curToken past }.
+// spec:SEC-2-5
 func (p *Parser) parseBlockExpr() *BlockExpr {
 	if !p.curIs(token.LBRACE) {
 		p.addError(fmt.Sprintf("expected {, got %s (%q)", p.curToken.Type, p.curToken.Literal))
@@ -763,6 +770,7 @@ func (p *Parser) parseBlockExpr() *BlockExpr {
 
 // --- Keyword expression parsers ---
 
+// spec:SEC-3-3
 func (p *Parser) parseIfExpr() Expr {
 	expr := &IfExpr{Token: p.curToken}
 	p.nextToken() // move past if
@@ -789,6 +797,7 @@ func (p *Parser) parseIfExpr() Expr {
 	return expr
 }
 
+// spec:SEC-3-4
 func (p *Parser) parseMatchExpr() Expr {
 	expr := &MatchExpr{Token: p.curToken}
 	p.nextToken() // move past match
@@ -900,6 +909,7 @@ func (p *Parser) maybeGuardedPattern(inner Pattern) Pattern {
 	return inner
 }
 
+// spec:SEC-3-5
 func (p *Parser) parseGuardExpr() Expr {
 	expr := &GuardExpr{Token: p.curToken}
 	p.nextToken() // move past guard
@@ -1001,6 +1011,7 @@ func (p *Parser) parseChantExpr() Expr {
 	return &ChantExpr{Token: tok, Name: name}
 }
 
+// spec:SEC-6 spec:SEC-6-1
 func (p *Parser) parseSpawnExpr() Expr {
 	tok := p.curToken
 	p.nextToken() // move past spawn

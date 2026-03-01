@@ -2,7 +2,7 @@ package parser
 
 import "github.com/joeabbey/morgoth/internal/token"
 
-// Node is the base interface for all AST nodes.
+// Node is the base interface for all AST nodes. spec:SEC-2
 type Node interface {
 	TokenLiteral() string
 }

@@ -62,7 +62,7 @@ func (ev *Evaluator) SetOutput(w io.Writer) {
 	ev.output = w
 }
 
-// Eval evaluates a complete program.
+// Eval evaluates a complete program. spec:SEC-4 spec:SEC-7
 func (ev *Evaluator) Eval(program *parser.Program) (*Value, error) {
 	var result *Value
 	for _, item := range program.Items {
@@ -178,6 +178,7 @@ func (ev *Evaluator) evalReturnStmt(stmt *parser.ReturnStmt) (*Value, error) {
 	return nil, &ReturnSignal{Value: val}
 }
 
+// spec:SEC-6-2
 func (ev *Evaluator) evalDecreeStmt(stmt *parser.DecreeStmt) (*Value, error) {
 	ev.decrees.Apply(stmt.Value)
 	return NilVal(), nil
@@ -265,7 +266,7 @@ func (ev *Evaluator) evalExpr(expr parser.Expr) (*Value, error) {
 		return ev.evalChantExpr(n)
 	case *parser.FnLitExpr:
 		return ev.evalFnLitExpr(n)
-	case *parser.SpawnExpr:
+	case *parser.SpawnExpr: // spec:SEC-6-1
 		// MVP stub: run spawn body synchronously, return nil.
 		_, err := ev.evalBlockExpr(n.Body)
 		if err != nil {
@@ -300,6 +301,7 @@ func (ev *Evaluator) evalArrayLitExpr(expr *parser.ArrayLitExpr) (*Value, error)
 	return ArrayVal(elems), nil
 }
 
+// spec:SEC-4-9
 func (ev *Evaluator) evalMapLitExpr(expr *parser.MapLitExpr) (*Value, error) {
 	m := NewOrderedMap()
 	for _, pair := range expr.Pairs {
@@ -316,6 +318,7 @@ func (ev *Evaluator) evalMapLitExpr(expr *parser.MapLitExpr) (*Value, error) {
 	return MapVal(m), nil
 }
 
+// spec:SEC-3-1 spec:SEC-4-6
 func (ev *Evaluator) evalBinaryExpr(expr *parser.BinaryExpr) (*Value, error) {
 	left, err := ev.evalExpr(expr.Left)
 	if err != nil {
@@ -768,6 +771,7 @@ func (ev *Evaluator) evalIndexExpr(expr *parser.IndexExpr) (*Value, error) {
 	}
 }
 
+// spec:SEC-4-8
 func (ev *Evaluator) adjustIndex(idx int64) int64 {
 	switch ev.decrees.IndexingBase {
 	case "zero":
@@ -800,6 +804,7 @@ func (ev *Evaluator) evalDotExpr(expr *parser.DotExpr) (*Value, error) {
 	return nil, &DoomError{Message: fmt.Sprintf("cannot access field %s on %s", expr.Field, left.String())}
 }
 
+// spec:SEC-4-7
 func (ev *Evaluator) evalPropagateExpr(expr *parser.PropagateExpr) (*Value, error) {
 	inner, err := ev.evalExpr(expr.Inner)
 	if err != nil {
@@ -818,6 +823,7 @@ func (ev *Evaluator) evalPropagateExpr(expr *parser.PropagateExpr) (*Value, erro
 	}
 }
 
+// spec:SEC-3-3
 func (ev *Evaluator) evalIfExpr(expr *parser.IfExpr) (*Value, error) {
 	cond, err := ev.evalExpr(expr.Condition)
 	if err != nil {
@@ -839,6 +845,7 @@ func (ev *Evaluator) evalIfExpr(expr *parser.IfExpr) (*Value, error) {
 	return NilVal(), nil
 }
 
+// spec:SEC-3-4
 func (ev *Evaluator) evalMatchExpr(expr *parser.MatchExpr) (*Value, error) {
 	subject, err := ev.evalExpr(expr.Subject)
 	if err != nil {
@@ -963,6 +970,7 @@ func (ev *Evaluator) matchesType(val *Value, typeName string) bool {
 	}
 }
 
+// spec:SEC-3-5
 func (ev *Evaluator) evalGuardExpr(expr *parser.GuardExpr) (*Value, error) {
 	cond, err := ev.evalExpr(expr.Condition)
 	if err != nil {
@@ -1024,6 +1032,7 @@ func (ev *Evaluator) evalErrExpr(expr *parser.ErrExpr) (*Value, error) {
 	return ErrVal(inner), nil
 }
 
+// spec:SEC-4-5
 func (ev *Evaluator) evalAsExpr(expr *parser.AsExpr) (*Value, error) {
 	left, err := ev.evalExpr(expr.Left)
 	if err != nil {
@@ -1094,6 +1103,7 @@ func (ev *Evaluator) evalAsExpr(expr *parser.AsExpr) (*Value, error) {
 	}
 }
 
+// spec:SEC-5
 func (ev *Evaluator) evalSpeakExpr(expr *parser.SpeakExpr) (*Value, error) {
 	val, err := ev.evalExpr(expr.Value)
 	if err != nil {
@@ -1109,6 +1119,7 @@ func (ev *Evaluator) evalSpeakExpr(expr *parser.SpeakExpr) (*Value, error) {
 	return OkVal(NilVal()), nil
 }
 
+// spec:SEC-5
 func (ev *Evaluator) evalDoomExpr(expr *parser.DoomExpr) (*Value, error) {
 	msg, err := ev.evalExpr(expr.Message)
 	if err != nil {
@@ -1117,6 +1128,7 @@ func (ev *Evaluator) evalDoomExpr(expr *parser.DoomExpr) (*Value, error) {
 	return nil, &DoomError{Message: msg.String()}
 }
 
+// spec:SEC-4-4
 func (ev *Evaluator) evalSorryExpr(expr *parser.SorryExpr) (*Value, error) {
 	if ev.decrees.NoForgiveness {
 		return ErrVal(StrVal("no")), nil
@@ -1127,6 +1139,7 @@ func (ev *Evaluator) evalSorryExpr(expr *parser.SorryExpr) (*Value, error) {
 	return OkVal(NilVal()), nil
 }
 
+// spec:SEC-5
 func (ev *Evaluator) evalChantExpr(expr *parser.ChantExpr) (*Value, error) {
 	_, err := ev.evalExpr(expr.Name)
 	if err != nil {

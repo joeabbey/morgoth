@@ -23,7 +23,7 @@ func NewEnv(parent *Env) *Env {
 	}
 }
 
-// Define creates a new binding in the current scope.
+// Define creates a new binding in the current scope. spec:SEC-4-3
 func (e *Env) Define(name string, val *Value, isConst bool) {
 	e.bindings[name] = &Binding{Value: val, IsConst: isConst}
 }
@@ -55,7 +55,7 @@ func (e *Env) Set(name string, val *Value) error {
 }
 
 // Forgive marks a const binding as forgiven so it can be reassigned.
-// Only searches the current scope — sorry() must be called in the same scope.
+// Only searches the current scope — sorry() must be called in the same scope. spec:SEC-4-4
 func (e *Env) Forgive(name string) error {
 	if b, ok := e.bindings[name]; ok {
 		b.Forgiven = true

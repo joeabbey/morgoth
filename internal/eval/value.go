@@ -7,7 +7,7 @@ import (
 	"github.com/joeabbey/morgoth/internal/parser"
 )
 
-// ValueKind tags the runtime type of a Value.
+// ValueKind tags the runtime type of a Value. spec:SEC-4-1
 type ValueKind int
 
 const (
@@ -75,7 +75,7 @@ func (m *OrderedMap) Len() int {
 	return len(m.keys)
 }
 
-// IsTruthy implements Morgoth truthiness (spec 4.2).
+// IsTruthy implements Morgoth truthiness. spec:SEC-4-2
 func (v *Value) IsTruthy() bool {
 	switch v.Kind {
 	case ValBool:

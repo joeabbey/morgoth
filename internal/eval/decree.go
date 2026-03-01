@@ -1,6 +1,6 @@
 package eval
 
-// DecreeConfig holds runtime flags set by decree statements.
+// DecreeConfig holds runtime flags set by decree statements. spec:SEC-6-2
 type DecreeConfig struct {
 	IndexingBase   string // "zero", "one", "weekday" (default)
 	DetHashing     bool
