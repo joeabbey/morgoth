@@ -34,4 +34,4 @@ jobs:
       - name: Fault Check
         env:
           FAULT_API_KEY: ${{ secrets.FAULT_API_KEY }}
-        run: fault check --branch 5122563 --format github
+        run: fault check --branch origin/master --format github
