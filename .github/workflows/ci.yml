@@ -35,4 +35,9 @@ jobs:
       - name: Fault Check
         env:
           FAULT_API_KEY: ${{ secrets.FAULT_API_KEY }}
-        run: fault check --branch origin/master --format github
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            fault check --branch origin/master --format github
+          else
+            fault check --branch HEAD~1 --format github
+          fi
