@@ -26,15 +26,16 @@ const (
 
 // Value is the universal runtime value.
 type Value struct {
-	Kind  ValueKind
-	Int   int64
-	Float float64
-	Bool  bool
-	Str   string
-	Array []*Value
-	Map   *OrderedMap
-	Fn    *FnValue
-	Inner *Value // for Ok/Err wrapping
+	Kind   ValueKind
+	Int    int64
+	Float  float64
+	Bool   bool
+	Str    string
+	Array  []*Value
+	Map    *OrderedMap
+	Fn     *FnValue
+	Inner  *Value // for Ok/Err wrapping
+	Coward bool   // coward-tagged values are always falsy
 }
 
 // FnValue captures a function closure.
@@ -77,11 +78,16 @@ func (m *OrderedMap) Len() int {
 
 // IsTruthy implements Morgoth truthiness. spec:SEC-4-2
 func (v *Value) IsTruthy() bool {
+	if v.Coward {
+		return false
+	}
 	switch v.Kind {
 	case ValBool:
 		return v.Bool
 	case ValInt:
 		return v.Int != 0
+	case ValFloat:
+		return v.Float != 0
 	case ValStr:
 		return v.Str != ""
 	case ValPtr:

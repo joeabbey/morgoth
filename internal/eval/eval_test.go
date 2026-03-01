@@ -1132,6 +1132,64 @@ speak ok
 	}
 }
 
+// --- Ptr truthiness ---
+
+func TestPtrTruthiness(t *testing.T) {
+	if PtrVal(0).IsTruthy() {
+		t.Error("PtrVal(0) should be falsy")
+	}
+	if !PtrVal(42).IsTruthy() {
+		t.Error("PtrVal(42) should be truthy")
+	}
+}
+
+// --- Float truthiness ---
+
+func TestFloatTruthiness(t *testing.T) {
+	tests := []struct {
+		val  *Value
+		want bool
+	}{
+		{FloatVal(0.0), false},
+		{FloatVal(1.0), true},
+		{FloatVal(-1.5), true},
+	}
+	for _, tt := range tests {
+		got := tt.val.IsTruthy()
+		if got != tt.want {
+			t.Errorf("FloatVal(%g).IsTruthy() = %v, want %v", tt.val.Float, got, tt.want)
+		}
+	}
+}
+
+// --- Coward ---
+
+func TestCoward(t *testing.T) {
+	tests := []struct {
+		source string
+		want   string
+	}{
+		{
+			`let x = coward(42); if x { speak "truthy" else doom("fail") } else { speak "falsy" else doom("fail") }`,
+			"falsy\n",
+		},
+		{
+			`let y = coward("hello"); if y { speak "truthy" else doom("fail") } else { speak "falsy" else doom("fail") }`,
+			"falsy\n",
+		},
+	}
+	for _, tt := range tests {
+		out, _, err := evalSource(t, tt.source)
+		if err != nil {
+			t.Errorf("source %q: unexpected error: %v", tt.source, err)
+			continue
+		}
+		if out != tt.want {
+			t.Errorf("source %q: got %q, want %q", tt.source, out, tt.want)
+		}
+	}
+}
+
 func TestConstErrName(t *testing.T) {
 	out, _, err := evalSource(t, `
 const err = "also works"

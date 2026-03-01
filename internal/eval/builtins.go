@@ -24,6 +24,8 @@ func (ev *Evaluator) callBuiltin(name string, args []*Value) (*Value, bool, erro
 		return ev.builtinReadFile(args)
 	case "parse_toml":
 		return ErrVal(StrVal("not implemented")), true, nil
+	case "coward":
+		return ev.builtinCoward(args)
 	default:
 		return nil, false, nil
 	}
@@ -43,6 +45,15 @@ func (ev *Evaluator) builtinLen(args []*Value) (*Value, bool, error) {
 	default:
 		return nil, true, &DoomError{Message: "len() argument must be array, string, or map"}
 	}
+}
+
+func (ev *Evaluator) builtinCoward(args []*Value) (*Value, bool, error) {
+	if len(args) != 1 {
+		return nil, true, &DoomError{Message: "coward() takes exactly 1 argument"}
+	}
+	v := *args[0]
+	v.Coward = true
+	return &v, true, nil
 }
 
 func (ev *Evaluator) builtinReadFile(args []*Value) (*Value, bool, error) {

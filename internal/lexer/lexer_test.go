@@ -465,6 +465,29 @@ func TestBlockCommentNestingCap(t *testing.T) {
 	}
 }
 
+func TestCRLFLineEndings(t *testing.T) {
+	// Same as TestSemicolonInsertion but with \r\n line endings.
+	input := "let x = 5\r\nlet y = 10\r\n"
+	l := New(input)
+	tokens := l.Tokenize()
+
+	expectedTypes := []token.TokenType{
+		token.LET, token.IDENT, token.ASSIGN, token.INT,
+		token.SEMICOLON,
+		token.LET, token.IDENT, token.ASSIGN, token.INT,
+		token.SEMICOLON,
+		token.EOF,
+	}
+	if len(tokens) != len(expectedTypes) {
+		t.Fatalf("expected %d tokens, got %d: %v", len(expectedTypes), len(tokens), tokenTypes(tokens))
+	}
+	for i, exp := range expectedTypes {
+		if tokens[i].Type != exp {
+			t.Errorf("token[%d]: expected %s, got %s (literal=%q)", i, exp, tokens[i].Type, tokens[i].Literal)
+		}
+	}
+}
+
 func tokenTypes(tokens []token.Token) []string {
 	out := make([]string, len(tokens))
 	for i, t := range tokens {
