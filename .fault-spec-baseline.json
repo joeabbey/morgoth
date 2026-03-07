@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "spec_file": "docs/SPEC.md",
+  "implemented": [
+    "Complete lexical structure with identifiers, keywords, comments, and whitespace handling",
+    "Grammar parsing for program structure, declarations, statements, expressions",
+    "Semicolon insertion rules based on token boundaries",
+    "All core literals: int, string, bool, nil, float",
+    "Variable bindings with let/const and shadowing support",
+    "Const immutability with sorry() forgiveness mechanism",
+    "Function declarations and calls with implicit return",
+    "Control flow: if/else expressions and match expressions with patterns",
+    "Guard expressions with non-local doom-return",
+    "Error propagation operator ? for result values",
+    "Result type constructors ok(x) and err(x)",
+    "Arrays and maps with indexing",
+    "Decree statements for runtime configuration",
+    "Built-in functions: speak, doom, chant, len, sorry",
+    "Truthiness rules for runtime values",
+    "CLI with run and repl commands",
+    "Complete test suite with golden file testing"
+  ],
+  "accepted_unexpected": null,
+  "updated_at": "2026-03-07T21:34:50.85242843Z"
+}
